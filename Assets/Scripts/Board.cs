@@ -1,0 +1,253 @@
+using NUnit.Framework;
+using System;
+using UnityEditor.Experimental.GraphView;
+using UnityEngine;
+using static UnityEditor.PlayerSettings;
+
+public class Board : MonoBehaviour
+{
+    //modify in inspector
+    public GameObject tilePrefab;
+    public GameObject kingPrefab;
+    public GameObject queenPrefab;
+    public GameObject bishopPrefab;
+    public GameObject rookPrefab;
+    public GameObject pawnPrefab;
+    public GameObject knightPrefab;
+    public float padding = 1f;
+    public float tileSize = 1f;
+
+    public Tile[,] tiles = new Tile[8, 8];
+    public ChessPieces[,] pieces = new ChessPieces[8, 8];
+
+    public ChessPieces selectedPiece = null;
+
+    public bool isWhiteTurn;
+
+    public ChessPieces lastWhiteMoved = null;
+    public ChessPieces lastBlackMoved = null;
+
+
+    void Start()
+    {
+        GenerateBoard();
+        GeneratePieces();
+        isWhiteTurn = true;
+    }
+
+    void Update()
+    {
+        if (Input.GetMouseButtonDown(0)) //if clicked out of map, cancel selected
+        {
+            if (selectedPiece == null) return;
+
+            Vector2 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            RaycastHit2D hit = Physics2D.Raycast(mouseWorld, Vector2.zero);
+
+            if (hit.collider != null) return;
+            else
+            {
+                Tile t = tiles[selectedPiece.X, selectedPiece.Y];
+                t.clearTile();
+                selectedPiece = null;
+            }  
+        }
+    }
+
+    private void ResetGame()
+    {
+        for (int x = 0; x < 8; x++)
+        {
+            for (int y = 0; y < 8; y++)
+            {
+                if (pieces[x, y] != null)
+                {
+                    Destroy(pieces[x, y].gameObject);
+                    pieces[x, y] = null;
+                }
+            }
+        }
+
+
+        clearAllTile();  
+        selectedPiece = null;
+        isWhiteTurn = true;
+
+        GeneratePieces();
+        isWhiteTurn = true;
+
+        lastWhiteMoved = null;
+        lastBlackMoved = null;
+    }
+
+    void GenerateBoard()
+    {
+        //offset
+        float startX = -(7 * tileSize) / 2f;
+        float startY = -(7 * tileSize) / 2f;
+
+        //generate tiles
+        for (int x = 0; x < 8; x++)
+        {
+            for (int y = 0; y < 8; y++)
+            {
+                Vector3 pos = new Vector3(startX + x*(tileSize + padding), startY + y*(tileSize + padding), 0);
+                Tile tile = Instantiate(tilePrefab, pos, Quaternion.identity, transform).GetComponent<Tile>();
+
+                tiles[x, y] = tile;
+                tile.SetTile((x + y) % 2 == 0); //determine white or black
+                tile.X = x;
+                tile.Y = y;
+            }
+        }
+    }
+
+    public void GenerateSinglePiece(string team, string type, int x, int y)
+    {
+        GameObject prefab;
+        if (type == "king") prefab = kingPrefab;
+        else if (type == "queen") prefab = queenPrefab;
+        else if (type == "rook") prefab = rookPrefab;
+        else if (type == "bishop") prefab = bishopPrefab;
+        else if (type == "knight") prefab = knightPrefab;
+        else if (type == "pawn") prefab = pawnPrefab;
+        else prefab = null;
+
+        ChessPieces cp = Instantiate(prefab).GetComponent<ChessPieces>();
+        pieces[x, y] = cp;
+        cp.SetPiece(team, type);
+        cp.setPos(x, y);
+    }
+
+    void GeneratePieces()
+    {
+        GenerateSinglePiece("black", "king", 4, 7);
+        GenerateSinglePiece("black", "queen", 3, 7);
+        GenerateSinglePiece("black", "bishop", 2, 7);
+        GenerateSinglePiece("black", "bishop", 5, 7);
+        GenerateSinglePiece("black", "knight", 1, 7);
+        GenerateSinglePiece("black", "knight", 6, 7);
+        GenerateSinglePiece("black", "rook", 0, 7);
+        GenerateSinglePiece("black", "rook", 7, 7);
+        for (int i = 0; i < 8; i++)
+        {
+            GenerateSinglePiece("black", "pawn", i, 6);
+        }
+
+        GenerateSinglePiece("white", "king", 4, 0);
+        GenerateSinglePiece("white", "queen", 3, 0);
+        GenerateSinglePiece("white", "bishop", 2, 0);
+        GenerateSinglePiece("white", "bishop", 5, 0);
+        GenerateSinglePiece("white", "knight", 1, 0);
+        GenerateSinglePiece("white", "knight", 6, 0);
+        GenerateSinglePiece("white", "rook", 0, 0);
+        GenerateSinglePiece("white", "rook", 7, 0);
+        for (int i = 0; i < 8; i++)
+        {
+            GenerateSinglePiece("white", "pawn", i, 1);
+        }
+    }
+
+    public void clearAllTile()
+    {
+        foreach (var tile in tiles)
+        {
+            
+            tile.clearTile();
+        }
+    }
+
+    public void OnTileClicked(int x, int y)
+    {
+        ChessPieces targetPiece = pieces[x, y];
+        Tile targetTile = tiles[x, y];
+        string currentTeam = isWhiteTurn ? "white" : "black";
+
+        if (selectedPiece == null)
+        {
+            //there's no piece on the tile, do nothing
+            if (targetPiece == null) return;
+
+            //piece belongs to the current team, select it
+            if (targetPiece.team == currentTeam)
+            {
+                clearAllTile();
+                selectedPiece = targetPiece;
+                selectedPiece.showValidMoveTile();
+                targetTile.setSelected();
+                return;
+            }
+            return;
+        }
+        else if(targetPiece !=null && targetPiece.team == currentTeam) //click on same team => change to it
+        {
+            clearAllTile();
+            selectedPiece = targetPiece;
+            selectedPiece.showValidMoveTile();
+            targetTile.setSelected();
+            return;
+        }
+
+        //click on legal move or attack move
+        if (targetTile.is_legal_move)
+        {
+            selectedPiece.moveTo(x, y);
+            selectedPiece = null;
+
+            //special move
+            if (targetTile.is_left_castling)
+            {
+                if (isWhiteTurn) pieces[0, 0].moveTo(3, 0);
+                else pieces[0, 7].moveTo(3, 7);
+            }
+
+            else if (targetTile.is_right_castling)
+            {
+                if (isWhiteTurn) pieces[7, 0].moveTo(5, 0);
+                else pieces[7, 7].moveTo(5, 7);
+            }
+            else if (targetTile.is_enpassant)
+            {
+                if (isWhiteTurn)
+                {
+                    Destroy(pieces[x, y - 1].gameObject);
+                    pieces[x, y - 1] = null;
+                }
+                else
+                {
+                    Destroy(pieces[x, y + 1].gameObject);
+                    pieces[x, y + 1] = null;
+                }
+
+            }
+            isWhiteTurn = !isWhiteTurn;
+        }
+        else if (targetTile.is_attack_move)
+        {
+            pieces[x, y] = null;
+            if (targetPiece.type == "king")
+            {
+                if (isWhiteTurn) Debug.Log("White wins");
+                else Debug.Log("Black wins");
+                ResetGame();
+                return;
+            }
+            Destroy(targetPiece.gameObject);
+            selectedPiece.moveTo(x, y);
+            selectedPiece = null;
+            isWhiteTurn = !isWhiteTurn;
+        }
+        else //clicked on illegal move => unselect
+        {
+            Debug.Log("hi");
+            selectedPiece = null;
+        }
+        clearAllTile();
+    }
+
+    public bool isOnBoard(int x, int y)
+    {
+        return (x >= 0 && x<=7 && y >= 0 && y<=7);
+    }
+
+}
