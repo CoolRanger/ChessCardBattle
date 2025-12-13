@@ -133,6 +133,7 @@ public class ChessPieces : MonoBehaviour
         board.clearAllTile();
         List<Vector2Int> moves = generateValidMoves();
         List<Vector2Int> atkMoves = generateAttackMoves(moves);
+
         foreach (var move in moves)
         {
             int x = move.x;
@@ -144,7 +145,10 @@ public class ChessPieces : MonoBehaviour
         {
             int x = move.x;
             int y = move.y;
-            board.tiles[x, y].setAttackMove();
+
+            //can only attack on the first step
+            if (board.stepsThisTurn != 0) board.tiles[x, y].clearTile();
+            else board.tiles[x, y].setAttackMove();
         }
     }
 

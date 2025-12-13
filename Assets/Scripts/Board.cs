@@ -24,8 +24,17 @@ public class Board : MonoBehaviour
 
     public bool isWhiteTurn;
 
-    public ChessPieces lastWhiteMoved = null;
+    public ChessPieces lastWhiteMoved = null; //for enpassant
     public ChessPieces lastBlackMoved = null;
+
+    public CardSystem whiteCardSystem;
+    public CardSystem blackCardSystem;
+
+    public GameObject blackEnergyBarPrefab;
+    public GameObject whiteEnergyBarPrefab;
+
+
+    public int stepsThisTurn = 0;
 
 
     void Start()
@@ -33,6 +42,20 @@ public class Board : MonoBehaviour
         GenerateBoard();
         GeneratePieces();
         isWhiteTurn = true;
+
+        EnergyBar blackBar = Instantiate(blackEnergyBarPrefab)
+        .GetComponent<EnergyBar>();
+        blackBar.transform.position = new Vector3(-8, 0, 0);
+        blackBar.SetEnergy(0);
+        blackCardSystem.energyBar = blackBar;
+
+        EnergyBar whiteBar = Instantiate(whiteEnergyBarPrefab)
+            .GetComponent<EnergyBar>();
+        whiteBar.transform.position = new Vector3(-10, 0, 0);
+        whiteBar.SetEnergy(0);
+        whiteCardSystem.energyBar = whiteBar;
+
+        whiteCardSystem.OnTurnStart();
     }
 
     void Update()
@@ -78,6 +101,10 @@ public class Board : MonoBehaviour
 
         lastWhiteMoved = null;
         lastBlackMoved = null;
+
+        whiteCardSystem.energyBar.SetEnergy(0);
+        blackCardSystem.energyBar.SetEnergy(0);
+        whiteCardSystem.OnTurnStart();
     }
 
     void GenerateBoard()
@@ -220,22 +247,32 @@ public class Board : MonoBehaviour
                 }
 
             }
-            isWhiteTurn = !isWhiteTurn;
+            stepsThisTurn++;
+            CheckTurnEnd();
         }
         else if (targetTile.is_attack_move)
         {
-            pieces[x, y] = null;
-            if (targetPiece.type == "king")
+            if(stepsThisTurn == 0) //can attack
             {
-                if (isWhiteTurn) Debug.Log("White wins");
-                else Debug.Log("Black wins");
-                ResetGame();
-                return;
+                pieces[x, y] = null;
+                if (targetPiece.type == "king")
+                {
+                    if (isWhiteTurn) Debug.Log("White wins");
+                    else Debug.Log("Black wins");
+                    ResetGame();
+                    return;
+                }
+                Destroy(targetPiece.gameObject);
+                selectedPiece.moveTo(x, y);
+                selectedPiece = null;
+                stepsThisTurn++;
+                CheckTurnEnd();
             }
-            Destroy(targetPiece.gameObject);
-            selectedPiece.moveTo(x, y);
-            selectedPiece = null;
-            isWhiteTurn = !isWhiteTurn;
+            else
+            {
+                Debug.Log("Second move cannot attack");
+                selectedPiece = null;
+            } 
         }
         else //clicked on illegal move => unselect
         {
@@ -243,6 +280,21 @@ public class Board : MonoBehaviour
             selectedPiece = null;
         }
         clearAllTile();
+    }
+
+    void CheckTurnEnd()
+    {
+        if (stepsThisTurn >= 2)
+        {
+            stepsThisTurn = 0;
+            isWhiteTurn = !isWhiteTurn;
+
+            // 新回合開始（卡牌 / 能量）
+            if (isWhiteTurn)
+                whiteCardSystem.OnTurnStart();
+            else
+                blackCardSystem.OnTurnStart();
+        }
     }
 
     public bool isOnBoard(int x, int y)
