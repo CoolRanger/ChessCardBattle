@@ -4,8 +4,12 @@ using UnityEngine;
 
 public class Pawn : ChessPieces
 {
-
-    
+    public override void PieceInit()
+    {
+        maxHP = 1;
+        hp = 1;
+        atk = 1;
+    }
     public override List<Vector2Int> generateValidMoves()
     {
         List<Vector2Int> moves = new List<Vector2Int>();

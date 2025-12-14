@@ -102,4 +102,21 @@ public class Tile : MonoBehaviour
         board.OnTileClicked(X, Y);
 
     }
+
+    void OnMouseOver()
+    {
+        if (Input.GetMouseButtonDown(1))
+        {
+            ChessPieces cp = board.pieces[X, Y];
+            if (cp == null) return;
+
+            Debug.Log(
+                $"[{cp.type.ToUpper()}]\n" +
+                $"Team: {cp.team}\n" +
+                $"HP: {cp.hp}/{cp.maxHP}\n" +
+                $"ATK: {cp.atk}\n"
+            );
+        }
+    }
+
 }

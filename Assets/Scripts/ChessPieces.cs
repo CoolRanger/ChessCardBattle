@@ -16,10 +16,23 @@ public class ChessPieces : MonoBehaviour
     public int step = 0;
     public bool canBeEnpassant = false;
     public Board board;
+
+    public int maxHP;
+    public int hp;
+    public int atk;
+
     void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
         board = Object.FindFirstObjectByType<Board>();
+        PieceInit();
+    }
+
+    public virtual void PieceInit()
+    {
+        hp = 1;
+        maxHP = 1;
+        atk = 1;
     }
 
     //set sprite and variable in this object

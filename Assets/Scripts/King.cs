@@ -3,6 +3,12 @@ using UnityEngine;
 
 public class King : ChessPieces
 {
+    public override void PieceInit()
+    {
+        maxHP = 7;
+        hp = 7;
+        atk = 7;
+    }
     public override List<Vector2Int> generateValidMoves()
     {
         List<Vector2Int> moves = new List<Vector2Int>();

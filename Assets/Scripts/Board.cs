@@ -43,39 +43,41 @@ public class Board : MonoBehaviour
         GeneratePieces();
         isWhiteTurn = true;
 
-        EnergyBar blackBar = Instantiate(blackEnergyBarPrefab)
-        .GetComponent<EnergyBar>();
+        EnergyBar blackBar = Instantiate(blackEnergyBarPrefab).GetComponent<EnergyBar>();
         blackBar.transform.position = new Vector3(-8, 0, 0);
         blackBar.SetEnergy(0);
         blackCardSystem.energyBar = blackBar;
 
-        EnergyBar whiteBar = Instantiate(whiteEnergyBarPrefab)
-            .GetComponent<EnergyBar>();
+        EnergyBar whiteBar = Instantiate(whiteEnergyBarPrefab).GetComponent<EnergyBar>();
         whiteBar.transform.position = new Vector3(-10, 0, 0);
         whiteBar.SetEnergy(0);
         whiteCardSystem.energyBar = whiteBar;
 
+        CardInfoPanel infoPanel = FindFirstObjectByType<CardInfoPanel>(FindObjectsInactive.Include);
+        whiteCardSystem.infoPanel = infoPanel;
+        blackCardSystem.infoPanel = infoPanel;
+
+
+        whiteCardSystem.ResetCards();
+        blackCardSystem.ResetCards();
+        whiteCardSystem.board = blackCardSystem.board = this;
+        whiteCardSystem.isWhite = true;
+        blackCardSystem.isWhite = false;
         whiteCardSystem.OnTurnStart();
     }
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(0)) //if clicked out of map, cancel selected
-        {
-            if (selectedPiece == null) return;
+        if (!Input.GetMouseButtonDown(0)) return;
 
-            Vector2 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            RaycastHit2D hit = Physics2D.Raycast(mouseWorld, Vector2.zero);
+        Vector2 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        RaycastHit2D hit = Physics2D.Raycast(mouseWorld, Vector2.zero);
 
-            if (hit.collider != null) return;
-            else
-            {
-                Tile t = tiles[selectedPiece.X, selectedPiece.Y];
-                t.clearTile();
-                selectedPiece = null;
-            }  
-        }
+        if (hit.collider != null) return;
+
+        CancelAllSelections();
     }
+
 
     private void ResetGame()
     {
@@ -102,6 +104,8 @@ public class Board : MonoBehaviour
         lastWhiteMoved = null;
         lastBlackMoved = null;
 
+        whiteCardSystem.ResetCards();
+        blackCardSystem.ResetCards();
         whiteCardSystem.energyBar.SetEnergy(0);
         blackCardSystem.energyBar.SetEnergy(0);
         whiteCardSystem.OnTurnStart();
@@ -110,8 +114,8 @@ public class Board : MonoBehaviour
     void GenerateBoard()
     {
         //offset
-        float startX = -(7 * tileSize) / 2f;
-        float startY = -(7 * tileSize) / 2f;
+        float startX = -(10 * tileSize) / 2f;
+        float startY = -(7.5f * tileSize) / 2f;
 
         //generate tiles
         for (int x = 0; x < 8; x++)
@@ -252,27 +256,44 @@ public class Board : MonoBehaviour
         }
         else if (targetTile.is_attack_move)
         {
-            if(stepsThisTurn == 0) //can attack
-            {
-                pieces[x, y] = null;
-                if (targetPiece.type == "king")
-                {
-                    if (isWhiteTurn) Debug.Log("White wins");
-                    else Debug.Log("Black wins");
-                    ResetGame();
-                    return;
-                }
-                Destroy(targetPiece.gameObject);
-                selectedPiece.moveTo(x, y);
-                selectedPiece = null;
-                stepsThisTurn++;
-                CheckTurnEnd();
-            }
-            else
+            if (stepsThisTurn != 0)
             {
                 Debug.Log("Second move cannot attack");
                 selectedPiece = null;
-            } 
+                clearAllTile();
+                return;
+            }
+
+            int damage = selectedPiece.atk;  
+            targetPiece.hp -= damage;
+
+            Debug.Log($"{selectedPiece.type} attacks {targetPiece.type}, dmg={damage}, hp left={targetPiece.hp}");
+
+            if (targetPiece.hp <= 0) //dead
+            {
+                pieces[x, y] = null;
+
+                // king dead -> game over
+                if (targetPiece.type == "king")
+                {
+                    Debug.Log(isWhiteTurn ? "White wins" : "Black wins");
+                    Destroy(targetPiece.gameObject);
+                    ResetGame();
+                    return;
+                }
+
+                Destroy(targetPiece.gameObject);
+                selectedPiece.moveTo(x, y);
+            }
+            else
+            {
+                // survived
+                Debug.Log("Target survived");
+            }
+
+            selectedPiece = null;
+            stepsThisTurn++;
+            CheckTurnEnd();
         }
         else //clicked on illegal move => unselect
         {
@@ -289,7 +310,7 @@ public class Board : MonoBehaviour
             stepsThisTurn = 0;
             isWhiteTurn = !isWhiteTurn;
 
-            // 新回合開始（卡牌 / 能量）
+            //new turn
             if (isWhiteTurn)
                 whiteCardSystem.OnTurnStart();
             else
@@ -301,5 +322,23 @@ public class Board : MonoBehaviour
     {
         return (x >= 0 && x<=7 && y >= 0 && y<=7);
     }
+
+    void CancelAllSelections()
+    {
+        // chesspiece
+        if (selectedPiece != null)
+        {
+            Tile t = tiles[selectedPiece.X, selectedPiece.Y];
+            t.clearTile();
+            selectedPiece = null;
+        }
+
+        clearAllTile();
+
+        //card
+        whiteCardSystem.DeselectCard();
+        blackCardSystem.DeselectCard();
+    }
+
 
 }
