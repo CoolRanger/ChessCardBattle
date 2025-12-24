@@ -87,24 +87,27 @@ public class Tile : MonoBehaviour
 
     void OnMouseEnter()
     {
-        if(!is_selected && !is_attack_move && !is_legal_move) SetColor(Color.blue);
+        if (!board.isGameActive) return;
+        if (!is_selected && !is_attack_move && !is_legal_move) SetColor(Color.blue);
     }
 
     void OnMouseExit()
     {
+        if (!board.isGameActive) return;
         if (!is_selected && !is_attack_move && !is_legal_move) SetColor(originalColor);
     }
 
 
     void OnMouseUpAsButton()
     {
+        if (!board.isGameActive) return;
         if (board.selectedPiece != null && board.selectedPiece.isMoving == true) return;
         board.OnTileClicked(X, Y);
-
     }
 
     void OnMouseOver()
     {
+        if (!board.isGameActive) return;
         if (Input.GetMouseButtonDown(1))
         {
             ChessPieces cp = board.pieces[X, Y];

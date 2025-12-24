@@ -2,17 +2,18 @@ using System;
 using System.Net;
 using Unity.Collections;
 using Unity.Networking.Transport;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class Server : MonoBehaviour
 {
     #region Singleton implementation
     public static Server Instance { get; set; }
+    public int connectedPlayers = 0;
 
     private void Awake()
     {
         Instance = this;
+        Application.runInBackground = true;
     }
     #endregion
 
@@ -100,6 +101,18 @@ public class Server : MonoBehaviour
         while ((c = driver.Accept()) != default(NetworkConnection))
         {
             connections.Add(c);
+            Debug.Log("Accepted a connection");
+
+            NetWelcome nw = new NetWelcome();
+            nw.AssignedTeam = connectedPlayers;
+            SendToClient(c, nw);
+
+            connectedPlayers++;
+
+            if (connectedPlayers == 2)
+            {
+                Broadcast(new NetStartGame());
+            }
         }
     }
 

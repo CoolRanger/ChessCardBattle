@@ -12,6 +12,7 @@ public class Client : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        Application.runInBackground = true;
     }
     #endregion
 
@@ -84,7 +85,7 @@ public class Client : MonoBehaviour
         {
             if (cmd == NetworkEvent.Type.Connect)
             {
-                // SendToServer(new NetWelcome());
+                SendToServer(new NetWelcome());
                 Debug.Log("We are now connected to the server");
             }
             else if (cmd == NetworkEvent.Type.Data)

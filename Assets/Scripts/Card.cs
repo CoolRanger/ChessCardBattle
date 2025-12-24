@@ -9,6 +9,7 @@ public class Card : MonoBehaviour
     public Sprite artwork;
 
     public CardSystem owner; //white or black
+    public Board board;
 
     SpriteRenderer sr;
     Color normalColor = Color.white;
@@ -18,6 +19,7 @@ public class Card : MonoBehaviour
     {
         sr = GetComponent<SpriteRenderer>();
         sr.color = normalColor;
+        board = Object.FindFirstObjectByType<Board>();
     }
 
     public void CardInit()
@@ -34,6 +36,7 @@ public class Card : MonoBehaviour
 
     void OnMouseDown()
     {
+        if (!board.isGameActive) return;
         owner.SelectCard(this);
     }
 }

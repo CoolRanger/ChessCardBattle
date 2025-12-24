@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using System;
+using Unity.Networking.Transport;
 using UnityEngine;
 
 public class Board : MonoBehaviour
@@ -31,41 +32,39 @@ public class Board : MonoBehaviour
     public GameObject blackEnergyBarPrefab;
     public GameObject whiteEnergyBarPrefab;
 
-
+    private bool hasInitialized = false;
+    public bool isGameActive = false;
     public int stepsThisTurn = 0;
+
+    //(0: white, 1: black, -1: Local)
+    public int currentTeam = -1;
+
+    void Awake()
+    {
+        RegisterEvents();
+    }
+
+    void OnDestroy()
+    {
+        UnRegisterEvents();
+    }
 
 
     void Start()
     {
-        GenerateBoard();
-        GeneratePieces();
-        isWhiteTurn = true;
-
-        EnergyBar blackBar = Instantiate(blackEnergyBarPrefab).GetComponent<EnergyBar>();
-        blackBar.transform.position = new Vector3(-8, 0, 0);
-        blackBar.SetEnergy(0);
-        blackCardSystem.energyBar = blackBar;
-
-        EnergyBar whiteBar = Instantiate(whiteEnergyBarPrefab).GetComponent<EnergyBar>();
-        whiteBar.transform.position = new Vector3(-10, 0, 0);
-        whiteBar.SetEnergy(0);
-        whiteCardSystem.energyBar = whiteBar;
-
-        CardInfoPanel infoPanel = FindFirstObjectByType<CardInfoPanel>(FindObjectsInactive.Include);
-        whiteCardSystem.infoPanel = infoPanel;
-        blackCardSystem.infoPanel = infoPanel;
-
-
-        whiteCardSystem.ResetCards();
-        blackCardSystem.ResetCards();
-        whiteCardSystem.board = blackCardSystem.board = this;
-        whiteCardSystem.isWhite = true;
-        blackCardSystem.isWhite = false;
-        whiteCardSystem.OnTurnStart();
+        
     }
 
     void Update()
     {
+        if (!hasInitialized || !isGameActive) return;
+
+        if (currentTeam != -1)
+        {
+            if ((currentTeam == 0 && !isWhiteTurn) || (currentTeam == 1 && isWhiteTurn))
+                return;
+        }
+
         if (!Input.GetMouseButtonDown(0)) return;
 
         Vector2 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -107,6 +106,42 @@ public class Board : MonoBehaviour
         whiteCardSystem.energyBar.SetEnergy(0);
         blackCardSystem.energyBar.SetEnergy(0);
         whiteCardSystem.OnTurnStart();
+    }
+
+    public void StartLocalGame()
+    {
+        InitBoard();
+        currentTeam = -1;
+        isGameActive = true;
+        ResetGame();
+    }
+
+    public void InitBoard()
+    {
+        if (!hasInitialized)
+        {
+            GenerateBoard();
+
+            EnergyBar blackBar = Instantiate(blackEnergyBarPrefab).GetComponent<EnergyBar>();
+            blackBar.transform.position = new Vector3(-8, 0, 0);
+            blackBar.SetEnergy(0);
+            blackCardSystem.energyBar = blackBar;
+
+            EnergyBar whiteBar = Instantiate(whiteEnergyBarPrefab).GetComponent<EnergyBar>();
+            whiteBar.transform.position = new Vector3(-10, 0, 0);
+            whiteBar.SetEnergy(0);
+            whiteCardSystem.energyBar = whiteBar;
+
+            CardInfoPanel infoPanel = FindFirstObjectByType<CardInfoPanel>(FindObjectsInactive.Include);
+            whiteCardSystem.infoPanel = infoPanel;
+            blackCardSystem.infoPanel = infoPanel;
+
+            whiteCardSystem.board = blackCardSystem.board = this;
+            whiteCardSystem.isWhite = true;
+            blackCardSystem.isWhite = false;
+
+            hasInitialized = true;
+        }
     }
 
     void GenerateBoard()
@@ -190,15 +225,21 @@ public class Board : MonoBehaviour
     {
         ChessPieces targetPiece = pieces[x, y];
         Tile targetTile = tiles[x, y];
-        string currentTeam = isWhiteTurn ? "white" : "black";
+        string activeTeamName = isWhiteTurn ? "white" : "black";
+
+        if (currentTeam != -1)
+        {
+            if (targetPiece != null)
+            {
+                if (currentTeam == 0 && targetPiece.team == "black") return;
+                if (currentTeam == 1 && targetPiece.team == "white") return;
+            }
+        }
 
         if (selectedPiece == null)
         {
-            //there's no piece on the tile, do nothing
             if (targetPiece == null) return;
-
-            //piece belongs to the current team, select it
-            if (targetPiece.team == currentTeam)
+            if (targetPiece.team == activeTeamName)
             {
                 clearAllTile();
                 selectedPiece = targetPiece;
@@ -208,7 +249,7 @@ public class Board : MonoBehaviour
             }
             return;
         }
-        else if (targetPiece != null && targetPiece.team == currentTeam) //click on same team => change to it
+        else if (targetPiece != null && targetPiece.team == activeTeamName)
         {
             clearAllTile();
             selectedPiece = targetPiece;
@@ -217,19 +258,21 @@ public class Board : MonoBehaviour
             return;
         }
 
-        //click on legal move or attack move
+
+        int originalX = selectedPiece.X;
+        int originalY = selectedPiece.Y;
+        bool validMove = false;
+
         if (targetTile.is_legal_move)
         {
             selectedPiece.moveTo(x, y);
             selectedPiece = null;
 
-            //special move
             if (targetTile.is_left_castling)
             {
                 if (isWhiteTurn) pieces[0, 0].moveTo(3, 0);
                 else pieces[0, 7].moveTo(3, 7);
             }
-
             else if (targetTile.is_right_castling)
             {
                 if (isWhiteTurn) pieces[7, 0].moveTo(5, 0);
@@ -247,9 +290,10 @@ public class Board : MonoBehaviour
                     Destroy(pieces[x, y + 1].gameObject);
                     pieces[x, y + 1] = null;
                 }
-
             }
+
             stepsThisTurn++;
+            validMove = true;
             CheckTurnEnd();
         }
         else if (targetTile.is_attack_move)
@@ -265,40 +309,43 @@ public class Board : MonoBehaviour
             int damage = selectedPiece.atk;
             targetPiece.hp -= damage;
 
-            Debug.Log($"{selectedPiece.type} attacks {targetPiece.type}, dmg={damage}, hp left={targetPiece.hp}");
-
-            if (targetPiece.hp <= 0) //dead
+            if (targetPiece.hp <= 0)
             {
                 pieces[x, y] = null;
-
-                // king dead -> game over
                 if (targetPiece.type == "king")
                 {
-                    Debug.Log(isWhiteTurn ? "White wins" : "Black wins");
-                    Destroy(targetPiece.gameObject);
-                    ResetGame();
+                    int winner = isWhiteTurn ? 0 : 1;
+                    Debug.Log(winner == 0 ? "White wins" : "Black wins");
+                    Destroy(targetPiece.gameObject); 
+                    GameUI.Instance.OnGameWon(winner);
                     return;
                 }
-
                 Destroy(targetPiece.gameObject);
                 selectedPiece.moveTo(x, y);
-            }
-            else
-            {
-                // survived
-                Debug.Log("Target survived");
             }
 
             selectedPiece = null;
             stepsThisTurn++;
+            validMove = true;
             CheckTurnEnd();
         }
-        else //clicked on illegal move => unselect
+        else
         {
-            Debug.Log("hi");
             selectedPiece = null;
         }
+
         clearAllTile();
+
+        //if it was valid and we're not in muti, sent it to server
+        if (validMove && currentTeam != -1)
+        {
+            NetMakeMove mm = new NetMakeMove();
+            mm.originalX = originalX;
+            mm.originalY = originalY;
+            mm.targetX = x;
+            mm.targetY = y;
+            Client.Instance.SendToServer(mm);
+        }
     }
 
     void CheckTurnEnd()
@@ -338,5 +385,110 @@ public class Board : MonoBehaviour
         blackCardSystem.DeselectCard();
     }
 
+    #region Network Events
 
+    private void RegisterEvents()
+    {
+        NetUtility.S_WELCOME += OnWelcomeServer;
+        NetUtility.S_MAKE_MOVE += OnMakeMoveServer; 
+
+        NetUtility.C_WELCOME += OnWelcomeClient;    
+        NetUtility.C_MAKE_MOVE += OnMakeMoveClient;
+
+        NetUtility.C_START_GAME += OnStartGameClient;
+    }
+
+    private void UnRegisterEvents()
+    {
+        NetUtility.S_WELCOME -= OnWelcomeServer;
+        NetUtility.S_MAKE_MOVE -= OnMakeMoveServer;
+
+        NetUtility.C_WELCOME -= OnWelcomeClient;
+        NetUtility.C_MAKE_MOVE -= OnMakeMoveClient;
+
+        NetUtility.C_START_GAME -= OnStartGameClient;
+    }
+
+    // Server Side Logic
+    private void OnWelcomeServer(NetMessage msg, NetworkConnection cnn)
+    {
+        Debug.Log("Server received welcome message (if any).");
+    }
+
+    private void OnMakeMoveServer(NetMessage msg, NetworkConnection cnn)
+    {
+        NetMakeMove mm = msg as NetMakeMove;
+        Server.Instance.Broadcast(mm);
+    }
+
+    // Client Side Logic
+    private void OnWelcomeClient(NetMessage msg)
+    {
+        NetWelcome nw = msg as NetWelcome;
+        currentTeam = nw.AssignedTeam;
+        Debug.Log($"My team is: {currentTeam}. Waiting for opponent...");
+
+        InitBoard();
+    }
+
+    private void OnStartGameClient(NetMessage msg)
+    {
+        Debug.Log("Both players connected. Starting game!");
+        isGameActive = true;
+        ResetGame();
+        GameUI.Instance.OnOnlineGameStart();
+    }
+
+    private void OnMakeMoveClient(NetMessage msg)
+    {
+        NetMakeMove mm = msg as NetMakeMove;
+
+        if (!isOnBoard(mm.originalX, mm.originalY) || !isOnBoard(mm.targetX, mm.targetY))
+        {
+            Debug.LogError("Network move out of bounds!");
+            return;
+        }
+
+        ChessPieces targetP = pieces[mm.originalX, mm.originalY];
+        if (targetP == null) return;
+
+        bool isPieceWhite = (targetP.team == "white");
+        int pieceTeamCode = isPieceWhite ? 0 : 1;
+        if (pieceTeamCode == currentTeam) return;
+
+        ChessPieces enemyPiece = pieces[mm.targetX, mm.targetY];
+
+        if (enemyPiece != null)
+        {
+            int damage = targetP.atk;
+            enemyPiece.hp -= damage;
+            if (enemyPiece.hp <= 0)
+            {
+                pieces[mm.targetX, mm.targetY] = null;
+                if (enemyPiece.type == "king")
+                {
+                    Debug.Log("Game Over (Network)");
+
+                    bool isWhiteKing = (enemyPiece.team == "white");
+                    int winner = isWhiteKing ? 1 : 0;
+
+                    Destroy(enemyPiece.gameObject);
+
+                    GameUI.Instance.OnGameWon(winner);
+
+                    return;
+                }
+                Destroy(enemyPiece.gameObject);
+                targetP.moveTo(mm.targetX, mm.targetY);
+            }
+        }
+        else
+        {
+            targetP.moveTo(mm.targetX, mm.targetY);
+        }
+
+        stepsThisTurn++;
+        CheckTurnEnd();
+    }
+    #endregion
 }

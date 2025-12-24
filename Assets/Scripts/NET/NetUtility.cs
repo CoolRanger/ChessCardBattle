@@ -27,7 +27,7 @@ public static class NetUtility
                 msg = new NetKeepAlive(stream);
                 break;
 
-           /* case OpCode.WELCOME:
+           case OpCode.WELCOME:
                 msg = new NetWelcome(stream);
                 break;
 
@@ -39,7 +39,7 @@ public static class NetUtility
                 msg = new NetMakeMove(stream);
                 break;
 
-            case OpCode.REMATCH:
+            /*case OpCode.REMATCH:
                 msg = new NetRematch(stream);
                 break;*/
 
