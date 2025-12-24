@@ -1,8 +1,6 @@
 using NUnit.Framework;
 using System;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
-using static UnityEditor.PlayerSettings;
 
 public class Board : MonoBehaviour
 {
@@ -94,7 +92,7 @@ public class Board : MonoBehaviour
         }
 
 
-        clearAllTile();  
+        clearAllTile();
         selectedPiece = null;
         isWhiteTurn = true;
 
@@ -122,7 +120,7 @@ public class Board : MonoBehaviour
         {
             for (int y = 0; y < 8; y++)
             {
-                Vector3 pos = new Vector3(startX + x*(tileSize + padding), startY + y*(tileSize + padding), 0);
+                Vector3 pos = new Vector3(startX + x * (tileSize + padding), startY + y * (tileSize + padding), 0);
                 Tile tile = Instantiate(tilePrefab, pos, Quaternion.identity, transform).GetComponent<Tile>();
 
                 tiles[x, y] = tile;
@@ -183,7 +181,7 @@ public class Board : MonoBehaviour
     {
         foreach (var tile in tiles)
         {
-            
+
             tile.clearTile();
         }
     }
@@ -210,7 +208,7 @@ public class Board : MonoBehaviour
             }
             return;
         }
-        else if(targetPiece !=null && targetPiece.team == currentTeam) //click on same team => change to it
+        else if (targetPiece != null && targetPiece.team == currentTeam) //click on same team => change to it
         {
             clearAllTile();
             selectedPiece = targetPiece;
@@ -264,7 +262,7 @@ public class Board : MonoBehaviour
                 return;
             }
 
-            int damage = selectedPiece.atk;  
+            int damage = selectedPiece.atk;
             targetPiece.hp -= damage;
 
             Debug.Log($"{selectedPiece.type} attacks {targetPiece.type}, dmg={damage}, hp left={targetPiece.hp}");
@@ -320,7 +318,7 @@ public class Board : MonoBehaviour
 
     public bool isOnBoard(int x, int y)
     {
-        return (x >= 0 && x<=7 && y >= 0 && y<=7);
+        return (x >= 0 && x <= 7 && y >= 0 && y <= 7);
     }
 
     void CancelAllSelections()
