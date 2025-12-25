@@ -25,7 +25,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3964790734200629525}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 1, w: -0.00000004371139}
   m_LocalPosition: {x: 2.1587987, y: -1.0470511, z: 7.35947}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -46,7 +46,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isWhite: 0
   board: {fileID: 0}
-  deck: []
+  deckData:
+  - {fileID: 11400000, guid: 68f7aae94e2b29944a5eb9031c76c74b, type: 2}
+  - {fileID: 11400000, guid: ed7e12311d379954da6ca8304fe5ad74, type: 2}
+  - {fileID: 11400000, guid: 11af4a6352ba7ac4b909b6cb384c5356, type: 2}
+  - {fileID: 11400000, guid: a013a23073d35084480c42c9ead9c33e, type: 2}
+  - {fileID: 11400000, guid: ccadabbb6adf4204db84965c2ff5fedd, type: 2}
   hand: []
   maxHandSize: 5
   selectedCard: {fileID: 0}
@@ -55,4 +60,3 @@ MonoBehaviour:
   startedX: -5
   startedY: 5.5
   cardSpacing: 1.4
-  infoPanel: {fileID: 0}

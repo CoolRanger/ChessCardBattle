@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 435362c8c7e03c7458be678f26854f63, type: 3}
+  m_Name: SkyCastle
+  m_EditorClassIdentifier: 
+  cardName: "\u5929\u7A7A\u4E4B\u57CE"
+  cost: 3
+  description: 
+  DescriptionArtwork: {fileID: 3508281983251637202, guid: 4c7f404b7f77f394eb6b980a7b684b1f, type: 3}
+  CardArtWork: {fileID: 6975283965459021424, guid: dc4c9a77b68a20444b7dcdc2ec88928e, type: 3}

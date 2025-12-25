@@ -6,7 +6,8 @@ public class CardSystem : MonoBehaviour
     public bool isWhite;
     public Board board;
 
-    public List<Card> deck = new List<Card>();
+    public List<CardData> deckData = new List<CardData>();
+
     public List<Card> hand = new List<Card>();
 
     public int maxHandSize = 5;
@@ -16,9 +17,6 @@ public class CardSystem : MonoBehaviour
     public GameObject cardPrefab;
     public float startedX, startedY;
     public float cardSpacing = 1.4f;
-
-    public CardInfoPanel infoPanel;
-
 
     void Awake()
     {
@@ -32,29 +30,26 @@ public class CardSystem : MonoBehaviour
         else board.whiteCardSystem.DeselectCard();
 
         energyBar.AddEnergy(1);
-
         DrawCard();
     }
 
     public void DrawCard()
     {
-        Debug.Log($"[DrawCard] hand.Count={hand.Count}, maxHandSize={maxHandSize}");
-
-        if (hand.Count >= maxHandSize)
-        {
-            Debug.Log("Hand full");
-            return;
-        }
+        if (hand.Count >= maxHandSize) return;
+        if (deckData.Count == 0) return; 
 
         GameObject go = Instantiate(cardPrefab, Vector3.zero, Quaternion.identity);
         Card card = go.GetComponent<Card>();
-        card.CardInit();
+
+        CardData randomData = deckData[Random.Range(0, deckData.Count)];
+        card.Init(randomData);
         card.owner = this;
+
+        if (board.currentTeam == 1) card.transform.rotation = Quaternion.Euler(0, 0, 180);
 
         hand.Add(card);
         RepositionHand();
     }
-
 
     void RepositionHand()
     {
@@ -77,69 +72,68 @@ public class CardSystem : MonoBehaviour
         {
             selectedCard.SetSelected(false);
             selectedCard = null;
-            infoPanel.Hide();
+            CardDescriptionUI.Instance.Hide();
         }
     }
 
-
     public void SelectCard(Card card)
     {
-        // ignore if not this player's turn
+
         if (board.isWhiteTurn != isWhite) return;
 
-        // click same card to use it
+
+        if (board.currentTeam != -1)
+        {
+            if (board.currentTeam == 0 && !isWhite) return;
+            if (board.currentTeam == 1 && isWhite) return;
+        }
+
+
         if (selectedCard == card)
         {
             UseSelectedCard();
             return;
         }
 
-        // cancel previous selection
         if (selectedCard != null) DeselectCard();
 
-        // select new card
         selectedCard = card;
         selectedCard.SetSelected(true);
-        infoPanel.Show(card);   
+
+        if (CardDescriptionUI.Instance != null)
+            CardDescriptionUI.Instance.Show(card.data);
     }
 
     void UseSelectedCard()
     {
         if (selectedCard == null) return;
 
-        if (energyBar.energy < selectedCard.cost)
+        if (energyBar.energy < selectedCard.data.cost)
         {
-            Debug.Log("Not enough energy to use this card");
+            Debug.Log("能量不足！");
             return;
         }
 
-        energyBar.MinusEnergy(selectedCard.cost);
-        Debug.Log($"Use card: {selectedCard.cardName}");
-
-        // TODO: add card effect here
+        energyBar.MinusEnergy(selectedCard.data.cost);
+        Debug.Log($"使用了卡牌: {selectedCard.data.cardName}");
 
         hand.Remove(selectedCard);
         Destroy(selectedCard.gameObject);
-
         selectedCard = null;
-        infoPanel.Hide();
-
+        CardDescriptionUI.Instance.Hide();
         RepositionHand();
     }
-
-
 
     public void ResetCards()
     {
         selectedCard = null;
+
+        if (CardDescriptionUI.Instance != null) CardDescriptionUI.Instance.Hide();
+
         foreach (var card in hand)
         {
-            if (card != null)
-            {
-                Destroy(card.gameObject);
-            }
+            if (card != null) Destroy(card.gameObject);
         }
         hand.Clear();
     }
-
 }

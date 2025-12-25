@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 435362c8c7e03c7458be678f26854f63, type: 3}
+  m_Name: DeathJudgement
+  m_EditorClassIdentifier: 
+  cardName: DeathJudgement
+  cost: 7
+  description: 
+  DescriptionArtwork: {fileID: -9125435651468191111, guid: e19f271f59c47cc4c93e7523476de116, type: 3}
+  CardArtWork: {fileID: 4031537653599987233, guid: a4d75e9c6855da24e95fcb6b86e68dd9, type: 3}

@@ -132,16 +132,38 @@ public class Board : MonoBehaviour
             whiteBar.SetEnergy(0);
             whiteCardSystem.energyBar = whiteBar;
 
-            CardInfoPanel infoPanel = FindFirstObjectByType<CardInfoPanel>(FindObjectsInactive.Include);
-            whiteCardSystem.infoPanel = infoPanel;
-            blackCardSystem.infoPanel = infoPanel;
-
             whiteCardSystem.board = blackCardSystem.board = this;
             whiteCardSystem.isWhite = true;
             blackCardSystem.isWhite = false;
 
             hasInitialized = true;
         }
+    }
+
+    public void AdjustViewForBlackTeam()
+    {
+        for (int x = 0; x < 8; x++)
+        {
+            for (int y = 0; y < 8; y++)
+            {
+                if (pieces[x, y] != null)
+                {
+                    pieces[x, y].transform.rotation = Quaternion.Euler(0, 0, 180);
+                }
+            }
+        }
+
+        if (whiteCardSystem.energyBar != null)
+            whiteCardSystem.energyBar.transform.rotation = Quaternion.Euler(0, 0, 180);
+
+        if (blackCardSystem.energyBar != null)
+            blackCardSystem.energyBar.transform.rotation = Quaternion.Euler(0, 0, 180);
+
+        if (whiteCardSystem != null)
+            whiteCardSystem.transform.rotation = Quaternion.Euler(0, 0, 180);
+
+        if (blackCardSystem != null)
+            blackCardSystem.transform.rotation = Quaternion.Euler(0, 0, 180);
     }
 
     void GenerateBoard()
@@ -227,7 +249,7 @@ public class Board : MonoBehaviour
         Tile targetTile = tiles[x, y];
         string activeTeamName = isWhiteTurn ? "white" : "black";
 
-        if (currentTeam != -1)
+        if (selectedPiece == null && currentTeam != -1)
         {
             if (targetPiece != null)
             {
@@ -436,6 +458,7 @@ public class Board : MonoBehaviour
         Debug.Log("Both players connected. Starting game!");
         isGameActive = true;
         ResetGame();
+        if (currentTeam == 1) AdjustViewForBlackTeam();
         GameUI.Instance.OnOnlineGameStart();
     }
 
