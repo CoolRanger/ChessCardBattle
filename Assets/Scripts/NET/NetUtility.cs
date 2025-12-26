@@ -9,10 +9,25 @@ public enum OpCode
     WELCOME = 2,
     START_GAME = 3,
     MAKE_MOVE = 4,
-    REMATCH = 5
+    DRAW_CARD = 5,
+    USE_CARD = 6,
+    SKIP_STEP = 7
 }
+
+
 public static class NetUtility
 {
+
+    public static Action<NetMessage> C_DRAW_CARD;
+    public static Action<NetMessage, NetworkConnection> S_DRAW_CARD;
+
+    public static Action<NetMessage> C_USE_CARD;
+    public static Action<NetMessage, NetworkConnection> S_USE_CARD;
+
+    public static Action<NetMessage> C_SKIP_STEP;
+    public static Action<NetMessage, NetworkConnection> S_SKIP_STEP;
+
+
     public static void OnData(
         DataStreamReader stream,
         NetworkConnection cnn,
@@ -37,6 +52,18 @@ public static class NetUtility
 
             case OpCode.MAKE_MOVE:
                 msg = new NetMakeMove(stream);
+                break;
+
+            case OpCode.DRAW_CARD:
+                msg = new NetDrawCard(stream);
+                break;
+
+            case OpCode.USE_CARD:
+                msg = new NetUseCard(stream);
+                break;
+
+            case OpCode.SKIP_STEP:
+                msg = new NetSkipTurn(stream);
                 break;
 
             /*case OpCode.REMATCH:

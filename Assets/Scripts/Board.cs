@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using Unity.Networking.Transport;
 using UnityEngine;
 
@@ -52,7 +53,7 @@ public class Board : MonoBehaviour
 
     void Start()
     {
-        
+
     }
 
     void Update()
@@ -88,6 +89,11 @@ public class Board : MonoBehaviour
                     pieces[x, y] = null;
                 }
             }
+            if (CardDescriptionUI.Instance != null)
+            {
+                CardDescriptionUI.Instance.Hide();
+                CardDescriptionUI.Instance.HidePieceInfo();
+            }
         }
 
 
@@ -106,6 +112,9 @@ public class Board : MonoBehaviour
         whiteCardSystem.energyBar.SetEnergy(0);
         blackCardSystem.energyBar.SetEnergy(0);
         whiteCardSystem.OnTurnStart();
+
+        if (CardDescriptionUI.Instance != null)
+            CardDescriptionUI.Instance.UpdateTurnText(true, 0);
     }
 
     public void StartLocalGame()
@@ -245,9 +254,19 @@ public class Board : MonoBehaviour
 
     public void OnTileClicked(int x, int y)
     {
+        CardSystem activeSystem = isWhiteTurn ? whiteCardSystem : blackCardSystem;
+
+        if (activeSystem != null && activeSystem.isTargeting)
+        {
+            activeSystem.OnTargetSelected(x, y);
+            return;
+        }
+
+
         ChessPieces targetPiece = pieces[x, y];
         Tile targetTile = tiles[x, y];
         string activeTeamName = isWhiteTurn ? "white" : "black";
+
 
         if (selectedPiece == null && currentTeam != -1)
         {
@@ -273,6 +292,16 @@ public class Board : MonoBehaviour
         }
         else if (targetPiece != null && targetPiece.team == activeTeamName)
         {
+
+            if (activeSystem.waitForSkyCastleMove)
+            {
+                if (targetPiece != activeSystem.skyCastleRook)
+                {
+                    Debug.Log("選取了其他棋子，取消天空之城狀態");
+                    activeSystem.DeselectCard(); 
+                }
+                else return;
+            }
             clearAllTile();
             selectedPiece = targetPiece;
             selectedPiece.showValidMoveTile();
@@ -315,6 +344,10 @@ public class Board : MonoBehaviour
             }
 
             stepsThisTurn++;
+
+            if (stepsThisTurn < 2 && CardDescriptionUI.Instance != null)
+                CardDescriptionUI.Instance.UpdateTurnText(isWhiteTurn, stepsThisTurn);
+
             validMove = true;
             CheckTurnEnd();
         }
@@ -338,7 +371,7 @@ public class Board : MonoBehaviour
                 {
                     int winner = isWhiteTurn ? 0 : 1;
                     Debug.Log(winner == 0 ? "White wins" : "Black wins");
-                    Destroy(targetPiece.gameObject); 
+                    Destroy(targetPiece.gameObject);
                     GameUI.Instance.OnGameWon(winner);
                     return;
                 }
@@ -348,12 +381,22 @@ public class Board : MonoBehaviour
 
             selectedPiece = null;
             stepsThisTurn++;
+
+            if (stepsThisTurn < 2 && CardDescriptionUI.Instance != null)
+                CardDescriptionUI.Instance.UpdateTurnText(isWhiteTurn, stepsThisTurn);
+
             validMove = true;
             CheckTurnEnd();
         }
         else
         {
             selectedPiece = null;
+        }
+
+
+        if (validMove && activeSystem.waitForSkyCastleMove)
+        {
+            activeSystem.FinishSkyCastleMove();
         }
 
         clearAllTile();
@@ -370,24 +413,111 @@ public class Board : MonoBehaviour
         }
     }
 
-    void CheckTurnEnd()
+    public void CheckTurnEnd()
     {
         if (stepsThisTurn >= 2)
         {
             stepsThisTurn = 0;
             isWhiteTurn = !isWhiteTurn;
 
+            if (CardDescriptionUI.Instance != null)
+                CardDescriptionUI.Instance.UpdateTurnText(isWhiteTurn, 0);
+
             //new turn
-            if (isWhiteTurn)
-                whiteCardSystem.OnTurnStart();
-            else
-                blackCardSystem.OnTurnStart();
+            if (isWhiteTurn) whiteCardSystem.OnTurnStart();
+            else blackCardSystem.OnTurnStart();
+
         }
     }
 
     public bool isOnBoard(int x, int y)
     {
         return (x >= 0 && x <= 7 && y >= 0 && y <= 7);
+    }
+
+
+    public bool IsSquareUnderAttack(int targetX, int targetY, string attackingTeam)
+    {
+        for (int i = 0; i < 8; i++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                ChessPieces piece = pieces[i, j];
+
+                if (piece != null && piece.team == attackingTeam)
+                {
+                    List<Vector2Int> validMoves = piece.generateValidMoves();
+
+                    foreach (var move in validMoves)
+                    {
+                        if (move.x == targetX && move.y == targetY)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+
+    //card ability
+
+    public void HighlightDeathJudgementTargets(string myTeam)
+    {
+        clearAllTile(); 
+
+        for (int i = 0; i < 8; i++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                ChessPieces piece = pieces[i, j];
+                if (piece == null) continue;
+                if (piece.team == myTeam) continue;
+                if (piece.type.ToLower() == "king") continue;
+
+                if (IsSquareUnderAttack(i, j, myTeam)) tiles[i, j].setAttackMove();
+            }
+        }
+    }
+    public void HighlightSkyCastleMoves(ChessPieces rook)
+    {
+        clearAllTile();
+
+        int[] dx = { 0, 0, 1, -1 };
+        int[] dy = { 1, -1, 0, 0 };
+
+        for (int i = 0; i < 4; i++)
+        {
+            int obstaclesFound = 0;
+            for (int dist = 1; dist < 8; dist++)
+            {
+                int nextX = rook.X + dx[i] * dist;
+                int nextY = rook.Y + dy[i] * dist;
+
+                if (!isOnBoard(nextX, nextY)) break;
+
+                ChessPieces targetPiece = pieces[nextX, nextY];
+
+                if (targetPiece == null) tiles[nextX, nextY].setLegalMove();
+                else
+                {
+                    obstaclesFound++;
+
+                    if (obstaclesFound == 1) continue;
+
+                    else 
+                    {
+                        if (stepsThisTurn == 0 && targetPiece.team != rook.team)
+                        {
+                            tiles[nextX, nextY].setAttackMove();
+                        }
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     void CancelAllSelections()
@@ -407,17 +537,48 @@ public class Board : MonoBehaviour
         blackCardSystem.DeselectCard();
     }
 
+    public void OnSkipButtonUser()
+    {
+        if (currentTeam != -1)
+        {
+            if (currentTeam == 0 && !isWhiteTurn) return;
+            if (currentTeam == 1 && isWhiteTurn) return;
+        }
+
+        if (currentTeam == -1)
+        {
+            stepsThisTurn++;
+            if (stepsThisTurn < 2 && CardDescriptionUI.Instance != null)
+                CardDescriptionUI.Instance.UpdateTurnText(isWhiteTurn, stepsThisTurn);
+            CheckTurnEnd();
+        }
+        else
+        {
+            Client.Instance.SendToServer(new NetSkipTurn());
+        }
+    }
+
+
     #region Network Events
 
     private void RegisterEvents()
     {
         NetUtility.S_WELCOME += OnWelcomeServer;
-        NetUtility.S_MAKE_MOVE += OnMakeMoveServer; 
+        NetUtility.S_MAKE_MOVE += OnMakeMoveServer;
 
-        NetUtility.C_WELCOME += OnWelcomeClient;    
+        NetUtility.C_WELCOME += OnWelcomeClient;
         NetUtility.C_MAKE_MOVE += OnMakeMoveClient;
 
         NetUtility.C_START_GAME += OnStartGameClient;
+
+        NetUtility.S_DRAW_CARD += OnDrawCardServer;
+        NetUtility.C_DRAW_CARD += OnDrawCardClient;
+
+        NetUtility.S_USE_CARD += OnUseCardServer;
+        NetUtility.C_USE_CARD += OnUseCardClient;
+
+        NetUtility.S_SKIP_STEP += OnSkipServer;
+        NetUtility.C_SKIP_STEP += OnSkipClient;
     }
 
     private void UnRegisterEvents()
@@ -429,7 +590,17 @@ public class Board : MonoBehaviour
         NetUtility.C_MAKE_MOVE -= OnMakeMoveClient;
 
         NetUtility.C_START_GAME -= OnStartGameClient;
+
+        NetUtility.S_DRAW_CARD -= OnDrawCardServer;
+        NetUtility.C_DRAW_CARD -= OnDrawCardClient;
+
+        NetUtility.S_USE_CARD -= OnUseCardServer;
+        NetUtility.C_USE_CARD -= OnUseCardClient;
+
+        NetUtility.S_SKIP_STEP -= OnSkipServer;
+        NetUtility.C_SKIP_STEP -= OnSkipClient;
     }
+
 
     // Server Side Logic
     private void OnWelcomeServer(NetMessage msg, NetworkConnection cnn)
@@ -441,6 +612,23 @@ public class Board : MonoBehaviour
     {
         NetMakeMove mm = msg as NetMakeMove;
         Server.Instance.Broadcast(mm);
+    }
+
+    private void OnDrawCardServer(NetMessage msg, NetworkConnection cnn)
+    {
+        NetDrawCard dc = msg as NetDrawCard;
+        Server.Instance.Broadcast(dc);
+    }
+
+    private void OnUseCardServer(NetMessage msg, NetworkConnection cnn)
+    {
+        NetUseCard uc = msg as NetUseCard;
+        Server.Instance.Broadcast(uc);
+    }
+
+    private void OnSkipServer(NetMessage msg, NetworkConnection cnn)
+    {
+        Server.Instance.Broadcast(msg);
     }
 
     // Client Side Logic
@@ -511,6 +699,39 @@ public class Board : MonoBehaviour
         }
 
         stepsThisTurn++;
+
+        if (stepsThisTurn < 2 && CardDescriptionUI.Instance != null)
+            CardDescriptionUI.Instance.UpdateTurnText(isWhiteTurn, stepsThisTurn);
+        CheckTurnEnd();
+    }
+
+
+
+    private void OnDrawCardClient(NetMessage msg)
+    {
+        NetDrawCard dc = msg as NetDrawCard;
+
+        if (isWhiteTurn)
+            whiteCardSystem.DrawSpecificCard(dc.deckIndex);
+        else
+            blackCardSystem.DrawSpecificCard(dc.deckIndex);
+    }
+
+    private void OnUseCardClient(NetMessage msg)
+    {
+        NetUseCard uc = msg as NetUseCard;
+
+        if (isWhiteTurn)
+            whiteCardSystem.UseSpecificCard(uc.handIndex);
+        else
+            blackCardSystem.UseSpecificCard(uc.handIndex);
+    }
+
+    private void OnSkipClient(NetMessage msg)
+    {
+        stepsThisTurn++;
+        if (stepsThisTurn < 2 && CardDescriptionUI.Instance != null)
+            CardDescriptionUI.Instance.UpdateTurnText(isWhiteTurn, stepsThisTurn);
         CheckTurnEnd();
     }
     #endregion

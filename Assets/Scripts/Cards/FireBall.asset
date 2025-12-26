@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 435362c8c7e03c7458be678f26854f63, type: 3}
+  m_Name: FireBall
+  m_EditorClassIdentifier: 
+  cardName: FireBall
+  displayName: "\u707C\u708E\u706B\u7403"
+  cost: 6
+  CardArtWork: {fileID: -8061466653420065943, guid: 55d514ab59cfc5b4fb60373b6db67605, type: 3}
+  DescriptionArtwork: {fileID: 4399545848632712532, guid: 03a5574bebca0f045ba1cbac5e5a08bb, type: 3}

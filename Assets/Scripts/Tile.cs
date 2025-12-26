@@ -108,17 +108,19 @@ public class Tile : MonoBehaviour
     void OnMouseOver()
     {
         if (!board.isGameActive) return;
+
         if (Input.GetMouseButtonDown(1))
         {
             ChessPieces cp = board.pieces[X, Y];
-            if (cp == null) return;
 
-            Debug.Log(
-                $"[{cp.type.ToUpper()}]\n" +
-                $"Team: {cp.team}\n" +
-                $"HP: {cp.hp}/{cp.maxHP}\n" +
-                $"ATK: {cp.atk}\n"
-            );
+            if (cp != null)
+            {
+                if (CardDescriptionUI.Instance != null) CardDescriptionUI.Instance.ShowPieceInfo(cp);
+            }
+            else
+            {
+                if (CardDescriptionUI.Instance != null) CardDescriptionUI.Instance.HidePieceInfo();
+            }
         }
     }
 

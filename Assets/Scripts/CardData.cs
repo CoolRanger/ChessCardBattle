@@ -4,12 +4,11 @@ using UnityEngine;
 public class CardData : ScriptableObject
 {
     [Header("基本資訊")]
-    public string cardName;      
-    public int cost;       
+    public string cardName;
+    public string displayName;
+    public int cost;
 
     [Header("敘述與圖片")]
-    [TextArea(5, 10)] 
-    public Sprite DescriptionArtwork;
     public Sprite CardArtWork;
-
+    public Sprite DescriptionArtwork;
 }

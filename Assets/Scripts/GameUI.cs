@@ -16,6 +16,8 @@ public class GameUI : MonoBehaviour
     [SerializeField] private GameObject gameOverPanel;
     [SerializeField] private TextMeshProUGUI winnerText;
 
+
+
     private void Awake()
     {
         Instance = this;
@@ -133,6 +135,12 @@ public class GameUI : MonoBehaviour
 
         server.ShutDown();
         client.ShutDown();
+
+        if (CardDescriptionUI.Instance != null)
+        {
+            CardDescriptionUI.Instance.Hide();      
+            CardDescriptionUI.Instance.HidePieceInfo(); 
+        }
 
         if (Camera.main != null)
         {

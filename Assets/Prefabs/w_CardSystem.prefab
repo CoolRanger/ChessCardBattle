@@ -52,6 +52,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 11af4a6352ba7ac4b909b6cb384c5356, type: 2}
   - {fileID: 11400000, guid: a013a23073d35084480c42c9ead9c33e, type: 2}
   - {fileID: 11400000, guid: ccadabbb6adf4204db84965c2ff5fedd, type: 2}
+  - {fileID: 11400000, guid: 46b0239ca46eecf4c96c04ff70af280c, type: 2}
   hand:
   - {fileID: 0}
   maxHandSize: 5
@@ -61,3 +62,6 @@ MonoBehaviour:
   startedX: -5
   startedY: -5.7
   cardSpacing: 1.4
+  isTargeting: 0
+  waitForSkyCastleMove: 0
+  skyCastleRook: {fileID: 0}
