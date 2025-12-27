@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 435362c8c7e03c7458be678f26854f63, type: 3}
-  m_Name: SkyCastle
+  m_Name: Poison
   m_EditorClassIdentifier: 
-  cardName: SkyCastle
-  displayName: "\u5929\u7A7A\u4E4B\u57CE"
-  cost: 3
-  id: 5
-  CardArtWork: {fileID: 6975283965459021424, guid: dc4c9a77b68a20444b7dcdc2ec88928e, type: 3}
-  DescriptionArtwork: {fileID: 3508281983251637202, guid: 4c7f404b7f77f394eb6b980a7b684b1f, type: 3}
+  cardName: Poison
+  displayName: "\u6BD2\u8DEF\u8A5B\u5492"
+  cost: 4
+  id: 6
+  CardArtWork: {fileID: -6523458590425622935, guid: 7c5d10b8621db1444b1e259959007617, type: 3}
+  DescriptionArtwork: {fileID: -2968789269776402680, guid: 0b09dc086fd527f4e8910c7ec7dcdfd6, type: 3}

@@ -15,5 +15,6 @@ MonoBehaviour:
   cardName: KingChange
   displayName: "\u738B\u547D\u4EA4\u63DB"
   cost: 3
+  id: 3
   CardArtWork: {fileID: -5793878428456888047, guid: a0206b78bedefd646897f5505f86d82f, type: 3}
   DescriptionArtwork: {fileID: 3602927520614595335, guid: a903a7c296b1bfd4b991bf35040c69af, type: 3}

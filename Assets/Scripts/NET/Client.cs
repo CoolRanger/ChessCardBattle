@@ -97,8 +97,7 @@ public class Client : MonoBehaviour
                 Debug.Log("Client got disconnected from server");
                 connection = default(NetworkConnection);
                 connectionDropped?.Invoke();
-                ShutDown();
-                return;
+                ShutDown(); 
             }
         }
     }
@@ -127,6 +126,11 @@ public class Client : MonoBehaviour
     {
         //Send it back, to keep both side alive
         SendToServer(nm);
+    }
+
+    private void OnApplicationQuit()
+    {
+        ShutDown();
     }
 
 }

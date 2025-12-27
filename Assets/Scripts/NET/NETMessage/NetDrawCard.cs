@@ -4,7 +4,8 @@ using UnityEngine;
 
 public class NetDrawCard : NetMessage
 {
-    public int deckIndex; // 抽到的牌在 deckData 裡的索引 (第幾張)
+    public int team;   // 0=white, 1=black
+    public int cardId; // CardData.id（穩定ID）
 
     public NetDrawCard()
     {
@@ -20,12 +21,14 @@ public class NetDrawCard : NetMessage
     public override void Serialize(ref DataStreamWriter writer)
     {
         writer.WriteByte((byte)Code);
-        writer.WriteInt(deckIndex); // 寫入抽到的卡牌編號
+        writer.WriteInt(team);
+        writer.WriteInt(cardId);
     }
 
     public override void Deserialize(DataStreamReader reader)
     {
-        deckIndex = reader.ReadInt();
+        team = reader.ReadInt();
+        cardId = reader.ReadInt();
     }
 
     public override void ReceivedOnClient()

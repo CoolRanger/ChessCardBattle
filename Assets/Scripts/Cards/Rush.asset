@@ -15,5 +15,6 @@ MonoBehaviour:
   cardName: Rush
   displayName: "\u885D\u92D2\u9677\u9663"
   cost: 5
+  id: 4
   CardArtWork: {fileID: 21300000, guid: 369e17e573b821e4ebc2d8a54b05e2ca, type: 3}
   DescriptionArtwork: {fileID: -6865721824126688111, guid: 6d8236fca3b49a3429544028abe2d713, type: 3}

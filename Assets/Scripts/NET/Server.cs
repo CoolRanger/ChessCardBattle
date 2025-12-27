@@ -135,8 +135,11 @@ public class Server : MonoBehaviour
                 {
                     Debug.Log("Client disconnected from server");
                     connections[i] = default(NetworkConnection);
-                    connectionDropped?.Invoke();
-                    ShutDown();
+
+                    
+                    Broadcast(new NetPlayerLeft());
+                    Debug.Log("¡iServer¡j¤w¼s¼½ PlayerLeft");
+                    NetUtility.C_PLAYER_LEFT?.Invoke(new NetPlayerLeft());
                 }
             }
         }
@@ -163,5 +166,8 @@ public class Server : MonoBehaviour
         }
     }
 
-
+    private void OnApplicationQuit()
+    {
+        ShutDown();
+    }
 }

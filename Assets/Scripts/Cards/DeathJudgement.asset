@@ -15,5 +15,6 @@ MonoBehaviour:
   cardName: DeathJudgement
   displayName: "\u6B7B\u795E\u88C1\u6C7A"
   cost: 7
+  id: 1
   CardArtWork: {fileID: 4031537653599987233, guid: a4d75e9c6855da24e95fcb6b86e68dd9, type: 3}
   DescriptionArtwork: {fileID: -9125435651468191111, guid: e19f271f59c47cc4c93e7523476de116, type: 3}

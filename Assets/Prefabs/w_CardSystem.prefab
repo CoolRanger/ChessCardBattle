@@ -53,7 +53,12 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a013a23073d35084480c42c9ead9c33e, type: 2}
   - {fileID: 11400000, guid: ccadabbb6adf4204db84965c2ff5fedd, type: 2}
   - {fileID: 11400000, guid: 46b0239ca46eecf4c96c04ff70af280c, type: 2}
+  - {fileID: 11400000, guid: bb4ee1d8e200e4549a0d0491e78575bd, type: 2}
   hand:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   - {fileID: 0}
   maxHandSize: 5
   selectedCard: {fileID: 0}

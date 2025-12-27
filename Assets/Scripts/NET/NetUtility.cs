@@ -11,21 +11,35 @@ public enum OpCode
     MAKE_MOVE = 4,
     DRAW_CARD = 5,
     USE_CARD = 6,
-    SKIP_STEP = 7
+    SKIP_STEP = 7,
+    PLAYER_LEFT = 8
 }
 
 
 public static class NetUtility
 {
 
+    // Net messages (Client side)
+    public static Action<NetMessage> C_KEEP_ALIVE;
+    public static Action<NetMessage> C_WELCOME;
+    public static Action<NetMessage> C_START_GAME;
+    public static Action<NetMessage> C_MAKE_MOVE;
+    public static Action<NetMessage> C_REMATCH;
     public static Action<NetMessage> C_DRAW_CARD;
-    public static Action<NetMessage, NetworkConnection> S_DRAW_CARD;
-
     public static Action<NetMessage> C_USE_CARD;
-    public static Action<NetMessage, NetworkConnection> S_USE_CARD;
-
     public static Action<NetMessage> C_SKIP_STEP;
+    public static Action<NetMessage> C_PLAYER_LEFT;
+
+    // Net messages (Server side)
+    public static Action<NetMessage, NetworkConnection> S_KEEP_ALIVE;
+    public static Action<NetMessage, NetworkConnection> S_WELCOME;
+    public static Action<NetMessage, NetworkConnection> S_START_GAME;
+    public static Action<NetMessage, NetworkConnection> S_MAKE_MOVE;
+    public static Action<NetMessage, NetworkConnection> S_REMATCH;
+    public static Action<NetMessage, NetworkConnection> S_DRAW_CARD;
+    public static Action<NetMessage, NetworkConnection> S_USE_CARD;
     public static Action<NetMessage, NetworkConnection> S_SKIP_STEP;
+    public static Action<NetMessage, NetworkConnection> S_PLAYER_LEFT;
 
 
     public static void OnData(
@@ -66,6 +80,10 @@ public static class NetUtility
                 msg = new NetSkipTurn(stream);
                 break;
 
+            case OpCode.PLAYER_LEFT:
+                msg = new NetPlayerLeft(stream);
+                break;
+
             /*case OpCode.REMATCH:
                 msg = new NetRematch(stream);
                 break;*/
@@ -80,17 +98,5 @@ public static class NetUtility
         else
             msg.ReceivedOnClient();
     }
-    // Net messages (Client side)
-    public static Action<NetMessage> C_KEEP_ALIVE;
-    public static Action<NetMessage> C_WELCOME;
-    public static Action<NetMessage> C_START_GAME;
-    public static Action<NetMessage> C_MAKE_MOVE;
-    public static Action<NetMessage> C_REMATCH;
-
-    // Net messages (Server side)
-    public static Action<NetMessage, NetworkConnection> S_KEEP_ALIVE;
-    public static Action<NetMessage, NetworkConnection> S_WELCOME;
-    public static Action<NetMessage, NetworkConnection> S_START_GAME;
-    public static Action<NetMessage, NetworkConnection> S_MAKE_MOVE;
-    public static Action<NetMessage, NetworkConnection> S_REMATCH;
+    
 }

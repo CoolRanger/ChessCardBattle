@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Networking.Transport;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Board : MonoBehaviour
 {
@@ -53,7 +54,13 @@ public class Board : MonoBehaviour
 
     void Start()
     {
-
+        if (Client.Instance != null)
+        {
+            Client.Instance.connectionDropped -= OnServerDisconnected;
+            Client.Instance.connectionDropped += OnServerDisconnected;
+            Debug.Log("【Board】已成功訂閱 Server 斷線事件");
+        }
+        else Debug.LogWarning("【Board】警告：找不到 Client 實體，無法訂閱斷線事件！");
     }
 
     void Update()
@@ -64,6 +71,24 @@ public class Board : MonoBehaviour
         {
             if ((currentTeam == 0 && !isWhiteTurn) || (currentTeam == 1 && isWhiteTurn))
                 return;
+        }
+
+        CardSystem activeSystem = isWhiteTurn ? whiteCardSystem : blackCardSystem;
+
+        if (activeSystem != null && activeSystem.isTargeting && activeSystem.GetPendingCardName() == "FireBall")
+        {
+            Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            RaycastHit2D hitInfo = Physics2D.Raycast(mousePos, Vector2.zero);
+
+            if (hitInfo.collider != null)
+            {
+                Tile tile = hitInfo.collider.GetComponent<Tile>();
+                if (tile != null)
+                {
+                    HighlightFireBallArea(tile.X, tile.Y);
+                }
+            }
+            else clearAllTile();
         }
 
         if (!Input.GetMouseButtonDown(0)) return;
@@ -159,6 +184,11 @@ public class Board : MonoBehaviour
                 {
                     pieces[x, y].transform.rotation = Quaternion.Euler(0, 0, 180);
                 }
+
+                if (tiles[x, y] != null)
+                {
+                    tiles[x, y].transform.rotation = Quaternion.Euler(0, 0, 180);
+                }
             }
         }
 
@@ -250,6 +280,32 @@ public class Board : MonoBehaviour
 
             tile.clearTile();
         }
+    }
+
+    public void HighlightFireBallArea(int refX, int refY)
+    {
+        clearAllTile(); 
+        if(currentTeam == 1)
+        {
+            for (int x = refX; x > refX - 2; x--)
+            {
+                for (int y = refY; y > refY - 2; y--)
+                {
+                    if (isOnBoard(x, y)) tiles[x, y].setAttackMove();
+                }
+            }
+        }
+        else
+        {
+            for (int x = refX; x < refX + 2; x++)
+            {
+                for (int y = refY; y < refY + 2; y++)
+                {
+                    if (isOnBoard(x, y)) tiles[x, y].setAttackMove();
+                }
+            }
+        }
+            
     }
 
     public void OnTileClicked(int x, int y)
@@ -461,6 +517,14 @@ public class Board : MonoBehaviour
         return false;
     }
 
+    private void BackToMenu()
+    {
+        if (Client.Instance != null) Client.Instance.ShutDown();
+        if (Server.Instance != null) Server.Instance.ShutDown();
+
+        SceneManager.LoadScene("OnlineMenu");
+    }
+
 
     //card ability
 
@@ -579,6 +643,11 @@ public class Board : MonoBehaviour
 
         NetUtility.S_SKIP_STEP += OnSkipServer;
         NetUtility.C_SKIP_STEP += OnSkipClient;
+
+        NetUtility.C_PLAYER_LEFT += OnPlayerLeftClient;
+
+        if (Client.Instance != null)
+            Client.Instance.connectionDropped += OnServerDisconnected;
     }
 
     private void UnRegisterEvents()
@@ -599,6 +668,11 @@ public class Board : MonoBehaviour
 
         NetUtility.S_SKIP_STEP -= OnSkipServer;
         NetUtility.C_SKIP_STEP -= OnSkipClient;
+
+        NetUtility.C_PLAYER_LEFT -= OnPlayerLeftClient;
+
+        if (Client.Instance != null)
+            Client.Instance.connectionDropped -= OnServerDisconnected;
     }
 
 
@@ -629,6 +703,12 @@ public class Board : MonoBehaviour
     private void OnSkipServer(NetMessage msg, NetworkConnection cnn)
     {
         Server.Instance.Broadcast(msg);
+    }
+
+    private void OnServerDisconnected()
+    {
+        Debug.Log("Server disconnected.");
+        BackToMenu();
     }
 
     // Client Side Logic
@@ -711,20 +791,24 @@ public class Board : MonoBehaviour
     {
         NetDrawCard dc = msg as NetDrawCard;
 
-        if (isWhiteTurn)
-            whiteCardSystem.DrawSpecificCard(dc.deckIndex);
-        else
-            blackCardSystem.DrawSpecificCard(dc.deckIndex);
+        CardSystem cs = (dc.team == 0) ? whiteCardSystem : blackCardSystem;
+        cs.DrawById(dc.cardId);
     }
 
     private void OnUseCardClient(NetMessage msg)
     {
         NetUseCard uc = msg as NetUseCard;
 
+        bool isMyMessage = (currentTeam != -1) &&
+                           ((currentTeam == 0 && isWhiteTurn) || (currentTeam == 1 && !isWhiteTurn));
+
+        if (isMyMessage) return;
+
+
         if (isWhiteTurn)
-            whiteCardSystem.UseSpecificCard(uc.handIndex);
+            whiteCardSystem.UseSpecificCard(uc.handIndex, uc.cardId, uc.targetX, uc.targetY);
         else
-            blackCardSystem.UseSpecificCard(uc.handIndex);
+            blackCardSystem.UseSpecificCard(uc.handIndex, uc.cardId, uc.targetX, uc.targetY);
     }
 
     private void OnSkipClient(NetMessage msg)
@@ -733,6 +817,12 @@ public class Board : MonoBehaviour
         if (stepsThisTurn < 2 && CardDescriptionUI.Instance != null)
             CardDescriptionUI.Instance.UpdateTurnText(isWhiteTurn, stepsThisTurn);
         CheckTurnEnd();
+    }
+
+    private void OnPlayerLeftClient(NetMessage msg)
+    {
+        Debug.Log("Opponent has left the game.");
+        BackToMenu();
     }
     #endregion
 }

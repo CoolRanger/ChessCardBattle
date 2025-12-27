@@ -7,6 +7,7 @@ public class CardData : ScriptableObject
     public string cardName;
     public string displayName;
     public int cost;
+    public int id;
 
     [Header("±Ô­z»P¹Ï¤ù")]
     public Sprite CardArtWork;

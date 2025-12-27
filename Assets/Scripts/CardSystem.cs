@@ -37,6 +37,7 @@ public class CardSystem : MonoBehaviour
         else board.whiteCardSystem.DeselectCard();
 
         energyBar.AddEnergy(1);
+
         if (board.currentTeam == -1)
         {
             int randomIndex = Random.Range(0, deckData.Count);
@@ -44,14 +45,23 @@ public class CardSystem : MonoBehaviour
         }
         else if (board.currentTeam == (isWhite ? 0 : 1))
         {
-            int randomIndex = Random.Range(0, deckData.Count);
+            int r = Random.Range(0, deckData.Count);
+            int cardId = deckData[r].id;
 
             NetDrawCard dc = new NetDrawCard();
-            dc.deckIndex = randomIndex;
+            dc.team = isWhite ? 0 : 1;
+            dc.cardId = cardId;
             Client.Instance.SendToServer(dc);
         }
     }
 
+    public string GetPendingCardName()
+    {
+        if (pendingCard != null) return pendingCard.data.cardName;
+        return "";
+    }
+
+    //local draw
     public void DrawSpecificCard(int index)
     {
         if (hand.Count >= maxHandSize) return;
@@ -61,6 +71,30 @@ public class CardSystem : MonoBehaviour
         Card card = go.GetComponent<Card>();
 
         CardData data = deckData[index];
+        card.Init(data);
+        card.owner = this;
+
+        if (board.currentTeam == 1) card.transform.rotation = Quaternion.Euler(0, 0, 180);
+
+        hand.Add(card);
+        RepositionHand();
+    }
+
+    //network draw by cardId
+    public void DrawById(int cardId)
+    {
+        if (hand.Count >= maxHandSize) return;
+        if (deckData.Count == 0) return;
+
+        CardData data = deckData.Find(c => c != null && c.id == cardId);
+        if (data == null)
+        {
+            Debug.LogError($"[DrawById] 找不到 cardId={cardId} 的 CardData");
+            return;
+        }
+
+        GameObject go = Instantiate(cardPrefab, Vector3.zero, Quaternion.identity);
+        Card card = go.GetComponent<Card>();
         card.Init(data);
         card.owner = this;
 
@@ -87,14 +121,12 @@ public class CardSystem : MonoBehaviour
 
     public void DeselectCard()
     {
-
         if (waitForSkyCastleMove)
         {
             waitForSkyCastleMove = false;
             skyCastleRook = null;
             pendingCard = null;
             if (board != null) board.clearAllTile();
-            Debug.Log("取消天空之城移動");
         }
 
         if (isTargeting)
@@ -108,7 +140,6 @@ public class CardSystem : MonoBehaviour
         {
             selectedCard.SetSelected(false);
             selectedCard = null;
-
             if (CardDescriptionUI.Instance != null)
                 CardDescriptionUI.Instance.Hide();
         }
@@ -125,7 +156,7 @@ public class CardSystem : MonoBehaviour
         if (selectedCard == card)
         {
             if (board.isWhiteTurn == isWhite) UseSelectedCard();
-            else Debug.Log("現在不是你的回合，只能看不能用");
+            else Debug.Log("現在不是你的回合");
             return;
         }
 
@@ -133,7 +164,6 @@ public class CardSystem : MonoBehaviour
 
         selectedCard = card;
         selectedCard.SetSelected(true);
-
         if (CardDescriptionUI.Instance != null) CardDescriptionUI.Instance.Show(card.data);
     }
 
@@ -147,48 +177,70 @@ public class CardSystem : MonoBehaviour
             return;
         }
 
-        if (selectedCard.data.cardName == "DeathJudgement")
-        {
-            if (board.stepsThisTurn > 0)
-            {
-                Debug.Log("請在回合開始時使用！");
-                return;
-            }
+        string cName = selectedCard.data.cardName;
 
-            isTargeting = true;
-            pendingCard = selectedCard;
-            string myTeamString = isWhite ? "white" : "black";
-            board.HighlightDeathJudgementTargets(myTeamString);
-            Debug.Log("【死神裁決】目標已標示，請點擊...");
+        if (cName == "DeathJudgement")
+        {
+            if (board.stepsThisTurn > 0) { Debug.Log("請在回合開始時使用！"); return; }
+            isTargeting = true; pendingCard = selectedCard;
+            board.HighlightDeathJudgementTargets(isWhite ? "white" : "black");
             return;
         }
-
-        if (selectedCard.data.cardName == "SkyCastle")
+        else if (cName == "SkyCastle" || cName == "FireBall" || cName == "Blood" || cName == "KingChange")
         {
             isTargeting = true;
             pendingCard = selectedCard;
-            Debug.Log("【天空之城】請選擇我方的一個 Rook...");
             return;
         }
+
 
         int index = hand.IndexOf(selectedCard);
+        int cardId = selectedCard.data.id;
+
         if (index == -1) return;
 
-        if (board.currentTeam == -1) UseSpecificCard(index);
-        else
+        if (board.currentTeam != -1)
         {
             NetUseCard uc = new NetUseCard();
             uc.handIndex = index;
+            uc.cardId = cardId;
             Client.Instance.SendToServer(uc);
-            DeselectCard();
         }
+
+        UseSpecificCard(index, cardId);
+        DeselectCard();
     }
 
-    public void UseSpecificCard(int index)
+    public void UseSpecificCard(int index, int expectedCardId, int targetX = -1, int targetY = -1)
     {
         if (index < 0 || index >= hand.Count) return;
 
         Card targetCard = hand[index];
+        int actualId = targetCard.data.id;
+
+        if (actualId != expectedCardId)
+        {
+            Debug.LogWarning($"[同步校正] Index {index} 的卡 ID 是 {actualId}，但預期是 {expectedCardId}。正在搜尋...");
+
+            bool found = false;
+            for (int i = 0; i < hand.Count; i++)
+            {
+                if (hand[i].data.id == expectedCardId)
+                {
+                    Debug.Log($"[同步校正] 在 Index {i} 找到正確卡牌！");
+                    targetCard = hand[i];
+                    index = i;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                Debug.LogError($"嚴重錯誤：手牌裡找不到 ID={expectedCardId} 的卡片！可能雙方 DeckData 設定不一致。");
+                return;
+            }
+        }
+
         if (targetCard == null) return;
 
         if (CardDescriptionUI.Instance != null)
@@ -196,9 +248,25 @@ public class CardSystem : MonoBehaviour
             CardDescriptionUI.Instance.ShowSkillLog(isWhite, targetCard.data.displayName);
         }
 
-        energyBar.MinusEnergy(targetCard.data.cost);
-        Debug.Log($"[同步] 使用卡牌: {targetCard.data.cardName}");
+        string cName = targetCard.data.cardName;
+        if (cName == "FireBall")
+        {
+            if (targetX != -1 && targetY != -1) ApplyFireBallDamage(targetX, targetY);
+        }
+        else if (cName == "Blood")
+        {
+            if (targetX != -1 && targetY != -1)
+            {
+                ChessPieces target = board.pieces[targetX, targetY];
+                if (target != null) target.atk *= 2;
+            }
+        }
+        else if (cName == "KingChange")
+        {
+            if (targetX != -1 && targetY != -1) ApplyKingChangeEffect(targetX, targetY);
+        }
 
+        energyBar.MinusEnergy(targetCard.data.cost);
         hand.RemoveAt(index);
         Destroy(targetCard.gameObject);
 
@@ -212,83 +280,46 @@ public class CardSystem : MonoBehaviour
         RepositionHand();
     }
 
-    public void ResetCards()
-    {
-        selectedCard = null;
-
-        if (CardDescriptionUI.Instance != null)
-        {
-            CardDescriptionUI.Instance.Hide();
-            CardDescriptionUI.Instance.HidePieceInfo();
-        }
-
-        foreach (var card in hand)
-        {
-            if (card != null) Destroy(card.gameObject);
-        }
-        hand.Clear();
-    }
-
     public void OnTargetSelected(int x, int y)
     {
         if (!isTargeting || pendingCard == null) return;
 
         ChessPieces targetPiece = board.pieces[x, y];
         string myTeamString = isWhite ? "white" : "black";
+        string cName = pendingCard.data.cardName;
 
-        if (targetPiece == null)
+        if (cName == "DeathJudgement")
         {
-            CancelTargeting();
-            return;
-        }
-
-        if (pendingCard.data.cardName == "DeathJudgement")
-        {
-            if (targetPiece.team == myTeamString)
-            {
-                Debug.Log("無效：不能對自己人使用");
-                CancelTargeting();
-                return;
-            }
-
-            if (targetPiece.type.ToLower() == "king")
-            {
-                Debug.Log("無效：死神無法帶走國王");
-                return;
-            }
-
-            if (!board.IsSquareUnderAttack(x, y, myTeamString))
-            {
-                Debug.Log("無效：目標不在我方任何棋子的攻擊範圍內！");
-                return;
-            }
-
+            if (targetPiece == null || targetPiece.team == myTeamString || targetPiece.type.ToLower() == "king") return;
+            if (!board.IsSquareUnderAttack(x, y, myTeamString)) return;
             ExecuteDeathJudgement(targetPiece);
         }
-        else if (pendingCard.data.cardName == "SkyCastle")
+        else if (cName == "SkyCastle")
         {
-            if (targetPiece.team != myTeamString)
-            {
-                Debug.Log("無效：天空之城只能作用於我方棋子");
-                CancelTargeting();
-                return;
-            }
-
-            if (targetPiece.type.ToLower() != "rook")
-            {
-                Debug.Log("無效：只能選擇 Rook (車)");
-                return;
-            }
-
+            if (targetPiece == null || targetPiece.team != myTeamString || targetPiece.type.ToLower() != "rook") return;
             skyCastleRook = targetPiece;
-
             board.HighlightSkyCastleMoves(skyCastleRook);
             board.selectedPiece = skyCastleRook;
-            board.tiles[x, y].setSelected(); 
+            board.tiles[x, y].setSelected();
             isTargeting = false;
             waitForSkyCastleMove = true;
         }
+        else if (cName == "FireBall")
+        {
+            ExecuteFireBall(x, y);
+        }
+        else if (cName == "Blood")
+        {
+            if (targetPiece == null || targetPiece.team != myTeamString) return;
+            ExecuteBlood(targetPiece);
+        }
+        else if (cName == "KingChange")
+        {
+            if (targetPiece == null || targetPiece.team != myTeamString || targetPiece.type.ToLower() == "king") return;
+            ExecuteKingChange(targetPiece);
+        }
     }
+
 
     public void FinishSkyCastleMove()
     {
@@ -300,18 +331,20 @@ public class CardSystem : MonoBehaviour
             CardDescriptionUI.Instance.ShowSkillLog(isWhite, pendingCard.data.displayName);
 
         int index = hand.IndexOf(pendingCard);
+        int cardId = pendingCard.data.id;
 
-        if (board.currentTeam == -1) // Local
-        {
-            energyBar.MinusEnergy(pendingCard.data.cost);
-            hand.RemoveAt(index);
-            Destroy(pendingCard.gameObject);
-            RepositionHand();
-        }
-        else // Online
+        //local
+        energyBar.MinusEnergy(pendingCard.data.cost);
+        hand.RemoveAt(index);
+        Destroy(pendingCard.gameObject);
+        RepositionHand();
+
+
+        if (board.currentTeam != -1)
         {
             NetUseCard uc = new NetUseCard();
             uc.handIndex = index;
+            uc.cardId = cardId; 
             Client.Instance.SendToServer(uc);
         }
 
@@ -324,47 +357,207 @@ public class CardSystem : MonoBehaviour
 
     private void ExecuteDeathJudgement(ChessPieces targetPiece)
     {
-
         int index = hand.IndexOf(pendingCard);
+        int cardId = pendingCard.data.id;
 
-        if (board.currentTeam == -1) 
-        {
-            energyBar.MinusEnergy(pendingCard.data.cost);
-            board.stepsThisTurn += 2;
+        board.pieces[targetPiece.X, targetPiece.Y] = null;
+        board.tiles[targetPiece.X, targetPiece.Y].clearTile();
+        Destroy(targetPiece.gameObject);
 
-            board.pieces[targetPiece.X, targetPiece.Y] = null;
-            board.tiles[targetPiece.X, targetPiece.Y].clearTile();
-            Destroy(targetPiece.gameObject);
+        energyBar.MinusEnergy(pendingCard.data.cost);
+        board.stepsThisTurn += 2;
+        hand.RemoveAt(index);
+        Destroy(pendingCard.gameObject);
+        RepositionHand();
 
-            hand.RemoveAt(index);
-            Destroy(pendingCard.gameObject);
-            RepositionHand();
-        }
-        else 
+        if (board.currentTeam != -1)
         {
             NetUseCard uc = new NetUseCard();
             uc.handIndex = index;
+            uc.cardId = cardId; 
             Client.Instance.SendToServer(uc);
-
-            energyBar.MinusEnergy(pendingCard.data.cost);
-            board.stepsThisTurn += 2;
-
-            board.pieces[targetPiece.X, targetPiece.Y] = null;
-            board.tiles[targetPiece.X, targetPiece.Y].clearTile();
-            Destroy(targetPiece.gameObject);
-
-            hand.RemoveAt(index);
-            Destroy(pendingCard.gameObject);
-            RepositionHand();
         }
 
         CancelTargeting();
         board.CheckTurnEnd();
     }
 
+    private void ExecuteFireBall(int refX, int refY)
+    {
+        if (CardDescriptionUI.Instance != null)
+            CardDescriptionUI.Instance.ShowSkillLog(isWhite, pendingCard.data.displayName);
+
+        int index = hand.IndexOf(pendingCard);
+        int cardId = pendingCard.data.id;
+
+        ApplyFireBallDamage(refX, refY);
+
+        energyBar.MinusEnergy(pendingCard.data.cost);
+        hand.RemoveAt(index);
+        Destroy(pendingCard.gameObject);
+        RepositionHand();
+
+        if (board.currentTeam != -1)
+        {
+            NetUseCard uc = new NetUseCard();
+            uc.handIndex = index;
+            uc.cardId = cardId;
+            uc.targetX = refX;
+            uc.targetY = refY;
+            Client.Instance.SendToServer(uc);
+        }
+        CancelTargeting();
+    }
+
+    private void ExecuteBlood(ChessPieces targetPiece)
+    {
+        if (CardDescriptionUI.Instance != null)
+            CardDescriptionUI.Instance.ShowSkillLog(isWhite, pendingCard.data.displayName);
+
+        int index = hand.IndexOf(pendingCard);
+        int cardId = pendingCard.data.id;
+
+        targetPiece.atk *= 2;
+
+        energyBar.MinusEnergy(pendingCard.data.cost);
+        hand.RemoveAt(index);
+        Destroy(pendingCard.gameObject);
+        RepositionHand();
+
+        if (board.currentTeam != -1)
+        {
+            NetUseCard uc = new NetUseCard();
+            uc.handIndex = index;
+            uc.cardId = cardId; 
+            uc.targetX = targetPiece.X;
+            uc.targetY = targetPiece.Y;
+            Client.Instance.SendToServer(uc);
+        }
+        CancelTargeting();
+    }
+
+    private void ExecuteKingChange(ChessPieces targetPiece)
+    {
+        if (CardDescriptionUI.Instance != null)
+            CardDescriptionUI.Instance.ShowSkillLog(isWhite, pendingCard.data.displayName);
+
+        int index = hand.IndexOf(pendingCard);
+        int cardId = pendingCard.data.id;
+
+        int savedTargetX = targetPiece.X;
+        int savedTargetY = targetPiece.Y;
+
+        ApplyKingChangeEffect(savedTargetX, savedTargetY);
+
+        energyBar.MinusEnergy(pendingCard.data.cost);
+        hand.RemoveAt(index);
+        Destroy(pendingCard.gameObject);
+        RepositionHand();
+
+        if (board.currentTeam != -1)
+        {
+            NetUseCard uc = new NetUseCard();
+            uc.handIndex = index;
+            uc.cardId = cardId;
+            uc.targetX = savedTargetX;
+            uc.targetY = savedTargetY;
+            Client.Instance.SendToServer(uc);
+        }
+        CancelTargeting();
+    }
+
+    private void ApplyFireBallDamage(int refX, int refY)
+    {
+
+        string enemyTeam = isWhite ? "black" : "white";
+
+        Debug.Log($"[Fireball] {(isWhite ? "White" : "Black")} attacks center ({refX}, {refY})");
+
+
+        if (!isWhite)
+        {
+            for (int x = refX; x > refX - 2; x--)
+            {
+                for (int y = refY; y > refY - 2; y--)
+                {
+                    if (board.isOnBoard(x, y)) Hit(x, y, enemyTeam);
+                }
+            }
+        }
+        else 
+        {
+            for (int x = refX; x < refX + 2; x++)
+            {
+                for (int y = refY; y < refY + 2; y++)
+                {
+                    if (board.isOnBoard(x, y)) Hit(x, y, enemyTeam);
+                }
+            }
+        }
+    }
+
+    void Hit(int x, int y, string enemyTeam)
+    {
+        ChessPieces target = board.pieces[x, y];
+        if (target != null && target.team == enemyTeam)
+        {
+            target.hp -= 1;
+            if (target.hp <= 0)
+            {
+                board.pieces[x, y] = null;
+                board.tiles[x, y].clearTile();
+                if (target.type == "king") GameUI.Instance.OnGameWon(isWhite ? 0 : 1);
+                Destroy(target.gameObject);
+            }
+        }
+    }
+
+    private void ApplyKingChangeEffect(int targetX, int targetY)
+    {
+        ChessPieces targetPiece = board.pieces[targetX, targetY];
+        string myTeamString = isWhite ? "white" : "black";
+        ChessPieces myKing = null;
+        foreach (var piece in board.pieces)
+        {
+            if (piece != null && piece.type.ToLower() == "king" && piece.team == myTeamString)
+            {
+                myKing = piece;
+                break;
+            }
+        }
+
+        if (myKing != null && targetPiece != null)
+        {
+            int kingX = myKing.X; int kingY = myKing.Y;
+            int targetPX = targetPiece.X; int targetPY = targetPiece.Y;
+
+            board.pieces[kingX, kingY] = targetPiece;
+            board.pieces[targetPX, targetPY] = myKing;
+
+            myKing.X = targetPX; myKing.Y = targetPY;
+            targetPiece.X = kingX; targetPiece.Y = kingY;
+
+            if (board.tiles[myKing.X, myKing.Y] != null)
+                myKing.transform.position = board.tiles[myKing.X, myKing.Y].transform.position;
+            if (board.tiles[targetPiece.X, targetPiece.Y] != null)
+                targetPiece.transform.position = board.tiles[targetPiece.X, targetPiece.Y].transform.position;
+        }
+    }
+
+    public void ResetCards()
+    {
+        selectedCard = null;
+        if (CardDescriptionUI.Instance != null)
+        {
+            CardDescriptionUI.Instance.Hide();
+            CardDescriptionUI.Instance.HidePieceInfo();
+        }
+        foreach (var card in hand) if (card != null) Destroy(card.gameObject);
+        hand.Clear();
+    }
+
     public void CancelTargeting()
     {
         DeselectCard();
-        Debug.Log("取消瞄準");
     }
 }
