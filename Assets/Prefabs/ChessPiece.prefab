@@ -75,7 +75,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 1304301613
-  m_SortingLayer: 2
+  m_SortingLayer: 3
   m_SortingOrder: 0
   m_Sprite: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -100,21 +100,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f95c2c6031a43d4408461993e8a1ae6b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  w_king: {fileID: 21300000, guid: a6816addf750e324fb6029e32f8f8746, type: 3}
-  w_queen: {fileID: 21300000, guid: 8fa83016fcaf6c648a2cb98642456f7e, type: 3}
-  w_knight: {fileID: 0}
-  w_rook: {fileID: 0}
-  w_bishop: {fileID: 0}
-  w_pawn: {fileID: 21300000, guid: 0580e3741b3d56e41b007bd9932bd2cf, type: 3}
-  b_king: {fileID: 21300000, guid: 03def9bd12ef8dd49b8db91542831cd4, type: 3}
-  b_queen: {fileID: 21300000, guid: 9ecde61caa226d344a959ca9601fdee9, type: 3}
-  b_knight: {fileID: 21300000, guid: 086a5f7ddaea979419b1e083844097cb, type: 3}
-  b_rook: {fileID: 21300000, guid: 61c2214db718f44459be593ebce8ef60, type: 3}
-  b_bishop: {fileID: 21300000, guid: 55c0dec1ef0b37e49ab4f03721af77a2, type: 3}
-  b_pawn: {fileID: 21300000, guid: c5d352d699200b54d9429798de992100, type: 3}
+  white: {fileID: 0}
+  black: {fileID: 0}
+  sr: {fileID: 0}
   team: 
   type: 
   X: 0
   Y: 0
   isMoving: 0
+  step: 0
+  canBeEnpassant: 0
   board: {fileID: 0}
+  maxHP: 0
+  hp: 0
+  atk: 0
+  poisonTurns: 0
+  moveSound: {fileID: 8300000, guid: 9c055c6295f8dcc4a823fdf0dd8fa414, type: 3}

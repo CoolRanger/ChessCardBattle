@@ -21,10 +21,17 @@ public class ChessPieces : MonoBehaviour
     public int hp;
     public int atk;
 
+    public int poisonTurns = 0;
+
+    private Color originColor;
+
+    public AudioClip moveSound;
+
     void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
         board = Object.FindFirstObjectByType<Board>();
+        originColor = sr.color;
         PieceInit();
     }
 
@@ -52,10 +59,13 @@ public class ChessPieces : MonoBehaviour
         X = x; Y = y;
     }
 
+
+
     //for move pieces
     public void moveTo(int x, int y)
     {
 
+       AudioManager.Instance.PlaySFX(moveSound);
         int oldX = X, oldY = Y;
         if (type == "pawn")
         {
@@ -74,6 +84,8 @@ public class ChessPieces : MonoBehaviour
         step++;
         if (team == "white") board.lastWhiteMoved = this;
         else board.lastBlackMoved = this;
+
+        
     }
     private IEnumerator smoothlyMoveTo(Vector3 targetPos, float duration = 0.15f)
     {
@@ -165,6 +177,15 @@ public class ChessPieces : MonoBehaviour
         }
     }
 
-    
+    public void SetPoison(int turns)
+    {
+        poisonTurns = turns;
+        GetComponent<SpriteRenderer>().color = new Color(0.6f, 1f, 0.6f);
+    }
+
+    public void UpdateStatusColor()
+    {
+        if (poisonTurns <= 0) GetComponent<SpriteRenderer>().color = originColor;
+    }
 
 }

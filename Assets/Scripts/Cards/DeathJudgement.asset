@@ -18,3 +18,4 @@ MonoBehaviour:
   id: 1
   CardArtWork: {fileID: 4031537653599987233, guid: a4d75e9c6855da24e95fcb6b86e68dd9, type: 3}
   DescriptionArtwork: {fileID: -9125435651468191111, guid: e19f271f59c47cc4c93e7523476de116, type: 3}
+  cardSfx: {fileID: 8300000, guid: 81a474241086acb4abaabbc5638e0705, type: 3}

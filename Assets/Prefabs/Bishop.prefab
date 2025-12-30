@@ -54,7 +54,13 @@ MonoBehaviour:
   Y: 0
   isMoving: 0
   step: 0
+  canBeEnpassant: 0
   board: {fileID: 0}
+  maxHP: 0
+  hp: 0
+  atk: 0
+  poisonTurns: 0
+  moveSound: {fileID: 8300000, guid: 9c055c6295f8dcc4a823fdf0dd8fa414, type: 3}
 --- !u!212 &5894614387956265265
 SpriteRenderer:
   m_ObjectHideFlags: 0

@@ -87,27 +87,27 @@ public class Tile : MonoBehaviour
 
     void OnMouseEnter()
     {
-        if (!board.isGameActive) return;
+        if (!board.isGameActive || (PromotionUI.Instance != null && PromotionUI.Instance.IsActive)) return;
         if (!is_selected && !is_attack_move && !is_legal_move) SetColor(Color.blue);
     }
 
     void OnMouseExit()
     {
-        if (!board.isGameActive) return;
+        if (!board.isGameActive || (PromotionUI.Instance != null && PromotionUI.Instance.IsActive)) return;
         if (!is_selected && !is_attack_move && !is_legal_move) SetColor(originalColor);
     }
 
 
     void OnMouseUpAsButton()
     {
-        if (!board.isGameActive) return;
+        if (!board.isGameActive || (PromotionUI.Instance != null && PromotionUI.Instance.IsActive)) return;
         if (board.selectedPiece != null && board.selectedPiece.isMoving == true) return;
         board.OnTileClicked(X, Y);
     }
 
     void OnMouseOver()
     {
-        if (!board.isGameActive) return;
+        if (!board.isGameActive || (PromotionUI.Instance != null && PromotionUI.Instance.IsActive)) return;
 
         if (Input.GetMouseButtonDown(1))
         {

@@ -44,7 +44,7 @@ public class Card : MonoBehaviour
 
     void OnMouseDown()
     {
-        if (board == null || !board.isGameActive) return;
+        if (board == null || !board.isGameActive || (PromotionUI.Instance != null && PromotionUI.Instance.IsActive)) return;
         owner.SelectCard(this);
     }
 }

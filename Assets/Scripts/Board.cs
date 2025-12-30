@@ -65,7 +65,7 @@ public class Board : MonoBehaviour
 
     void Update()
     {
-        if (!hasInitialized || !isGameActive) return;
+        if (!hasInitialized || !isGameActive || (PromotionUI.Instance != null && PromotionUI.Instance.IsActive)) return;
 
         if (currentTeam != -1)
         {
@@ -305,7 +305,6 @@ public class Board : MonoBehaviour
                 }
             }
         }
-            
     }
 
     public void OnTileClicked(int x, int y)
@@ -405,6 +404,22 @@ public class Board : MonoBehaviour
                 CardDescriptionUI.Instance.UpdateTurnText(isWhiteTurn, stepsThisTurn);
 
             validMove = true;
+
+            ChessPieces movedPiece = pieces[x, y];
+            if (TryTriggerPromotion(movedPiece))
+            {
+                if (currentTeam != -1)
+                {
+                    NetMakeMove mm = new NetMakeMove();
+                    mm.originalX = originalX;
+                    mm.originalY = originalY;
+                    mm.targetX = x;
+                    mm.targetY = y;
+                    Client.Instance.SendToServer(mm);
+                }
+                clearAllTile();
+                return;
+            }
             CheckTurnEnd();
         }
         else if (targetTile.is_attack_move)
@@ -442,6 +457,25 @@ public class Board : MonoBehaviour
                 CardDescriptionUI.Instance.UpdateTurnText(isWhiteTurn, stepsThisTurn);
 
             validMove = true;
+
+            ChessPieces pieceOnTile = pieces[x, y];
+            if (pieceOnTile != null && pieceOnTile.team == activeTeamName)
+            {
+                if (TryTriggerPromotion(pieceOnTile))
+                {
+                    if (currentTeam != -1)
+                    {
+                        NetMakeMove mm = new NetMakeMove();
+                        mm.originalX = originalX;
+                        mm.originalY = originalY;
+                        mm.targetX = x;
+                        mm.targetY = y;
+                        Client.Instance.SendToServer(mm);
+                    }
+                    clearAllTile();
+                    return;
+                }
+            }
             CheckTurnEnd();
         }
         else
@@ -479,6 +513,8 @@ public class Board : MonoBehaviour
             if (CardDescriptionUI.Instance != null)
                 CardDescriptionUI.Instance.UpdateTurnText(isWhiteTurn, 0);
 
+            ProcessStatusEffects();
+
             //new turn
             if (isWhiteTurn) whiteCardSystem.OnTurnStart();
             else blackCardSystem.OnTurnStart();
@@ -489,6 +525,62 @@ public class Board : MonoBehaviour
     public bool isOnBoard(int x, int y)
     {
         return (x >= 0 && x <= 7 && y >= 0 && y <= 7);
+    }
+
+    public bool TryTriggerPromotion(ChessPieces piece)
+    {
+        if (piece.type != "pawn") return false;
+
+        int endY = (piece.team == "white") ? 7 : 0;
+
+        if (piece.Y == endY)
+        {
+            if (currentTeam == -1 || (currentTeam == 0 && isWhiteTurn) || (currentTeam == 1 && !isWhiteTurn))
+            {
+                PromotionUI.Instance.Show(piece.team, (selectedType) =>
+                {
+                    PromotePawn(piece.X, piece.Y, selectedType);
+                    CheckTurnEnd();
+                });
+
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void PromotePawn(int x, int y, string newType)
+    {
+        ChessPieces pawn = pieces[x, y];
+        if (pawn == null) return;
+
+        string team = pawn.team;
+        int cx = pawn.X;
+        int cy = pawn.Y;
+
+        Destroy(pawn.gameObject);
+        pieces[cx, cy] = null;
+
+        GenerateSinglePiece(team, newType, cx, cy);
+
+        if (currentTeam == 1 && pieces[cx, cy] != null)
+        {
+            pieces[cx, cy].transform.rotation = Quaternion.Euler(0, 0, 180);
+        }
+
+        if (currentTeam != -1 && IsLocalTurn())
+        {
+            NetPromote np = new NetPromote();
+            np.x = cx;
+            np.y = cy;
+            np.newType = newType;
+            Client.Instance.SendToServer(np);
+        }
+    }
+
+    private bool IsLocalTurn()
+    {
+        return (currentTeam == 0 && isWhiteTurn) || (currentTeam == 1 && !isWhiteTurn);
     }
 
 
@@ -622,6 +714,34 @@ public class Board : MonoBehaviour
         }
     }
 
+    public void ProcessStatusEffects()
+    {
+        string currentTeamName = isWhiteTurn ? "white" : "black";
+
+        for (int x = 0; x < 8; x++)
+        {
+            for (int y = 0; y < 8; y++)
+            {
+                ChessPieces piece = pieces[x, y];
+                if (piece != null && piece.team == currentTeamName && piece.poisonTurns > 0)
+                {
+                    piece.hp -= 1;
+                    piece.poisonTurns -= 1;
+                    piece.UpdateStatusColor();
+
+                    if (piece.hp <= 0)
+                    {
+                        pieces[x, y] = null;
+                        tiles[x, y].clearTile();
+
+                        if (piece.type == "king") GameUI.Instance.OnGameWon(isWhiteTurn ? 1 : 0);
+                        Destroy(piece.gameObject);
+                    }
+                }
+            }
+        }
+    }
+
 
     #region Network Events
 
@@ -643,6 +763,9 @@ public class Board : MonoBehaviour
 
         NetUtility.S_SKIP_STEP += OnSkipServer;
         NetUtility.C_SKIP_STEP += OnSkipClient;
+
+        NetUtility.S_PROMOTE += OnPromoteServer;
+        NetUtility.C_PROMOTE += OnPromoteClient;
 
         NetUtility.C_PLAYER_LEFT += OnPlayerLeftClient;
 
@@ -669,7 +792,12 @@ public class Board : MonoBehaviour
         NetUtility.S_SKIP_STEP -= OnSkipServer;
         NetUtility.C_SKIP_STEP -= OnSkipClient;
 
+        NetUtility.S_PROMOTE -= OnPromoteServer;
+        NetUtility.C_PROMOTE -= OnPromoteClient;
+
         NetUtility.C_PLAYER_LEFT -= OnPlayerLeftClient;
+
+        
 
         if (Client.Instance != null)
             Client.Instance.connectionDropped -= OnServerDisconnected;
@@ -686,6 +814,12 @@ public class Board : MonoBehaviour
     {
         NetMakeMove mm = msg as NetMakeMove;
         Server.Instance.Broadcast(mm);
+    }
+
+    private void OnPromoteServer(NetMessage msg, NetworkConnection cnn)
+    {
+        NetPromote mp = msg as NetPromote;
+        Server.Instance.Broadcast(mp);
     }
 
     private void OnDrawCardServer(NetMessage msg, NetworkConnection cnn)
@@ -816,6 +950,14 @@ public class Board : MonoBehaviour
         stepsThisTurn++;
         if (stepsThisTurn < 2 && CardDescriptionUI.Instance != null)
             CardDescriptionUI.Instance.UpdateTurnText(isWhiteTurn, stepsThisTurn);
+        CheckTurnEnd();
+    }
+
+    private void OnPromoteClient(NetMessage msg)
+    {
+        NetPromote np = msg as NetPromote;
+        if (IsLocalTurn()) return;
+        PromotePawn(np.x, np.y, np.newType.ToString());
         CheckTurnEnd();
     }
 

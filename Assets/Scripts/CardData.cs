@@ -12,4 +12,7 @@ public class CardData : ScriptableObject
     [Header("敘述與圖片")]
     public Sprite CardArtWork;
     public Sprite DescriptionArtwork;
+
+    [Header("音效")]
+    public AudioClip cardSfx;
 }

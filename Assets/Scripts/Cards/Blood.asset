@@ -15,5 +15,7 @@ MonoBehaviour:
   cardName: Blood
   displayName: "\u78A7\u8840\u72C2\u6BBA"
   cost: 6
+  id: 0
   CardArtWork: {fileID: 6871005635838696995, guid: 9332455162ab75048a84d1071481e544, type: 3}
   DescriptionArtwork: {fileID: -4735435312240535133, guid: 48d49198e554de847870f2a6bf7489a8, type: 3}
+  cardSfx: {fileID: 8300000, guid: 90cd5056c584b73468097e48116cefdb, type: 3}

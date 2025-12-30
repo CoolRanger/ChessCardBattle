@@ -12,7 +12,8 @@ public enum OpCode
     DRAW_CARD = 5,
     USE_CARD = 6,
     SKIP_STEP = 7,
-    PLAYER_LEFT = 8
+    PLAYER_LEFT = 8,
+    PROMOTE = 9
 }
 
 
@@ -29,6 +30,7 @@ public static class NetUtility
     public static Action<NetMessage> C_USE_CARD;
     public static Action<NetMessage> C_SKIP_STEP;
     public static Action<NetMessage> C_PLAYER_LEFT;
+    public static Action<NetMessage> C_PROMOTE;
 
     // Net messages (Server side)
     public static Action<NetMessage, NetworkConnection> S_KEEP_ALIVE;
@@ -40,6 +42,7 @@ public static class NetUtility
     public static Action<NetMessage, NetworkConnection> S_USE_CARD;
     public static Action<NetMessage, NetworkConnection> S_SKIP_STEP;
     public static Action<NetMessage, NetworkConnection> S_PLAYER_LEFT;
+    public static Action<NetMessage, NetworkConnection> S_PROMOTE;
 
 
     public static void OnData(
@@ -82,6 +85,10 @@ public static class NetUtility
 
             case OpCode.PLAYER_LEFT:
                 msg = new NetPlayerLeft(stream);
+                break;
+
+            case OpCode.PROMOTE:
+                msg = new NetPromote(stream);
                 break;
 
             /*case OpCode.REMATCH:

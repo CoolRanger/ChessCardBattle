@@ -53,7 +53,14 @@ MonoBehaviour:
   X: 0
   Y: 0
   isMoving: 0
+  step: 0
+  canBeEnpassant: 0
   board: {fileID: 0}
+  maxHP: 0
+  hp: 0
+  atk: 0
+  poisonTurns: 0
+  moveSound: {fileID: 8300000, guid: 9c055c6295f8dcc4a823fdf0dd8fa414, type: 3}
 --- !u!212 &8357578642797320697
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -96,7 +103,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 1304301613
-  m_SortingLayer: 2
+  m_SortingLayer: 3
   m_SortingOrder: 0
   m_Sprite: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
