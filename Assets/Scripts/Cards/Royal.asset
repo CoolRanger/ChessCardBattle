@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 435362c8c7e03c7458be678f26854f63, type: 3}
+  m_Name: Royal
+  m_EditorClassIdentifier: 
+  cardName: Royal
+  displayName: "\u7687\u5BB6\u5E87\u8B77"
+  cost: 4
+  id: 7
+  CardArtWork: {fileID: -6739737056194332381, guid: d682fc7b2d0fd9e40ba7b31bb6aee136, type: 3}
+  DescriptionArtwork: {fileID: 5031836264582404055, guid: cea2a2af046c2404a814f48af6d7506a, type: 3}
