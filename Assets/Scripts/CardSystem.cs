@@ -199,7 +199,7 @@ public class CardSystem : MonoBehaviour
 
         if (index == -1) return;
 
-        if (board.currentTeam != -1)
+        if (board.currentTeam != -1) 
         {
             NetUseCard uc = new NetUseCard();
             uc.handIndex = index;
@@ -265,6 +265,8 @@ public class CardSystem : MonoBehaviour
         {
             if (targetX != -1 && targetY != -1) ApplyKingChangeEffect(targetX, targetY);
         }
+
+        else if (cName == "Crystal") energyBar.AddEnergy(1);
 
         energyBar.MinusEnergy(targetCard.data.cost);
         hand.RemoveAt(index);

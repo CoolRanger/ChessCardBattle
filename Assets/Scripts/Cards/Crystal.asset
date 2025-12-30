@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 435362c8c7e03c7458be678f26854f63, type: 3}
   m_Name: Crystal
   m_EditorClassIdentifier: 
-  cardName: Crystle
+  cardName: Crystal
   displayName: "\u9B54\u6CD5\u6C34\u6676"
   cost: 0
   id: 9
-  CardArtWork: {fileID: 9134282596182681008, guid: 59dfbb5e01d946744a4352c15563fce6, type: 3}
-  DescriptionArtwork: {fileID: -6710304315816618267, guid: 91bd4843d034fd24caa3d750cfa7335e, type: 3}
+  CardArtWork: {fileID: 21300000, guid: 59dfbb5e01d946744a4352c15563fce6, type: 3}
+  DescriptionArtwork: {fileID: 21300000, guid: 91bd4843d034fd24caa3d750cfa7335e, type: 3}
