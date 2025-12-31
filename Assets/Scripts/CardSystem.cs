@@ -51,8 +51,19 @@ public class CardSystem : MonoBehaviour
 
     public void OnTurnStart()
     {
-        if (isWhite) board.blackCardSystem.DeselectCard();
-        else board.whiteCardSystem.DeselectCard();
+        if (isWhite)
+        {
+            board.blackCardSystem.DeselectCard();
+            board.lastWhiteMoved = null;
+            for (int i = 0; i < 8; i++) board.tiles[i, 5].is_enpassant = false;
+        }
+        else
+        {
+            board.whiteCardSystem.DeselectCard();
+            board.lastBlackMoved = null;
+            for (int i = 0; i < 8; i++) board.tiles[i, 2].is_enpassant = false;
+        }
+        
 
         energyBar.AddEnergy(2);
 
@@ -83,7 +94,7 @@ public class CardSystem : MonoBehaviour
     public void DrawSpecificCard(int index)
     {
         
-        //if (hand.Count >= maxHandSize) return;
+        if (hand.Count >= maxHandSize) return;
         if (deckData.Count == 0) return;
         if (AudioManager.Instance != null && drawCardSound != null) AudioManager.Instance.PlaySFX(drawCardSound);
         GameObject go = Instantiate(cardPrefab, Vector3.zero, Quaternion.identity);

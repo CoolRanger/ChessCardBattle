@@ -55,7 +55,7 @@ public class Tile : MonoBehaviour
         is_attack_move = false;
         is_left_castling = false;
         is_right_castling = false;
-        is_enpassant = false;
+        //is_enpassant = false;
         IcnRenderer.sprite = null;
     }
 

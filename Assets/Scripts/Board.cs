@@ -380,8 +380,11 @@ public class Board : MonoBehaviour
         int originalY = selectedPiece.Y;
         bool validMove = false;
 
+        if (isWhiteTurn && lastWhiteMoved == selectedPiece) return;
+        if (!isWhiteTurn && lastBlackMoved == selectedPiece) return;
+
         if (targetTile.is_legal_move)
-        {
+        { 
             selectedPiece.moveTo(x, y);
             selectedPiece = null;
 
@@ -394,19 +397,6 @@ public class Board : MonoBehaviour
             {
                 if (isWhiteTurn) pieces[7, 0].moveTo(5, 0);
                 else pieces[7, 7].moveTo(5, 7);
-            }
-            else if (targetTile.is_enpassant)
-            {
-                if (isWhiteTurn)
-                {
-                    Destroy(pieces[x, y - 1].gameObject);
-                    pieces[x, y - 1] = null;
-                }
-                else
-                {
-                    Destroy(pieces[x, y + 1].gameObject);
-                    pieces[x, y + 1] = null;
-                }
             }
 
             stepsThisTurn++;
@@ -436,12 +426,19 @@ public class Board : MonoBehaviour
         else if (targetTile.is_attack_move)
         {
             if (AudioManager.Instance != null && attackSound != null) AudioManager.Instance.PlaySFX(attackSound);
-            if (stepsThisTurn != 0)
+            /*if (stepsThisTurn != 0)
             {
                 Debug.Log("Second move cannot attack");
                 selectedPiece = null;
                 clearAllTile();
                 return;
+            } */
+
+            if (targetTile.is_enpassant)
+            {
+                Debug.Log("enpassant attack");
+                if (isWhiteTurn) targetPiece = pieces[x, y - 1];
+                else targetPiece = pieces[x, y + 1];
             }
 
             int damage = selectedPiece.atk;
@@ -885,14 +882,45 @@ public class Board : MonoBehaviour
             return;
         }
 
+
+
         ChessPieces targetP = pieces[mm.originalX, mm.originalY];
+        ChessPieces enemyPiece = pieces[mm.targetX, mm.targetY];
+
+        bool isEnPassant = enemyPiece == null && targetP.type == "pawn" &&
+            mm.originalX != mm.targetX;
+
+        if (isEnPassant)
+        {
+            int epY = (targetP.team == "white") ? mm.targetY - 1 : mm.targetY + 1;
+            ChessPieces epPawn = pieces[mm.targetX, epY];
+
+            if (epPawn != null)
+            {
+                epPawn.hp -= targetP.atk;
+
+                if (epPawn.hp <= 0)
+                {
+                    pieces[mm.targetX, epY] = null;
+                    Destroy(epPawn.gameObject);
+                    targetP.moveTo(mm.targetX, mm.targetY);
+                }
+            }
+
+            stepsThisTurn++;
+            if (stepsThisTurn < 2 && CardDescriptionUI.Instance != null)
+                CardDescriptionUI.Instance.UpdateTurnText(isWhiteTurn, stepsThisTurn);
+
+            CheckTurnEnd();
+            return;
+        }
+
+
         if (targetP == null) return;
 
         bool isPieceWhite = (targetP.team == "white");
         int pieceTeamCode = isPieceWhite ? 0 : 1;
         if (pieceTeamCode == currentTeam) return;
-
-        ChessPieces enemyPiece = pieces[mm.targetX, mm.targetY];
 
         if (enemyPiece != null)
         {

@@ -144,9 +144,14 @@ public class ChessPieces : MonoBehaviour
         List<Vector2Int> ret = new List<Vector2Int>();
         foreach (var move in moves)
         {
-            ChessPieces cp = board.pieces[move.x, move.y];
+            ChessPieces cp = board.pieces[move.x, move.y];  
             if (cp && cp.team != team)
             {
+                ret.Add(move);
+            }
+            else if(board.tiles[move.x, move.y].is_enpassant)
+            {
+                Debug.Log("tile is set to enpassant");
                 ret.Add(move);
             }
         }
@@ -163,17 +168,17 @@ public class ChessPieces : MonoBehaviour
         {
             int x = move.x;
             int y = move.y;
-            board.tiles[x, y].setLegalMove();
+            if (team == "white" && board.lastWhiteMoved == this || team == "black" && board.lastBlackMoved == this) board.clearAllTile();
+            else board.tiles[x, y].setLegalMove();
         }
 
         foreach(var move in atkMoves)
         {
             int x = move.x;
             int y = move.y;
-
-            //can only attack on the first step
-            if (board.stepsThisTurn != 0) board.tiles[x, y].clearTile();
+            if (team == "white" && board.lastWhiteMoved == this || team == "black" && board.lastBlackMoved == this) board.clearAllTile();
             else board.tiles[x, y].setAttackMove();
+
         }
     }
 
