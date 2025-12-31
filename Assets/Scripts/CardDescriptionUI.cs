@@ -20,7 +20,8 @@ public class CardDescriptionUI : MonoBehaviour
     public TextMeshProUGUI turnInfoText; 
     public TextMeshProUGUI skillLogText; 
     public RectTransform gameInfoRect;   
-    public float gameInfoOffsetY = 300f;  
+    public float gameInfoOffsetY;  
+    public float gameInfoOffsetX; 
 
     [Header("邊距設定 (Stretch模式)")]
     public float topMargin = 200f;
@@ -28,7 +29,9 @@ public class CardDescriptionUI : MonoBehaviour
     public float marginLarge = 1225f;
     public float marginSmall = 0f;
 
-    public float piecePanelOffsetY = -300f;
+    public float piecePanelOffsetY;
+    public float piecePanelOffsetX;
+
 
     private RectTransform cardRect; 
     private Board board;
@@ -126,13 +129,13 @@ public class CardDescriptionUI : MonoBehaviour
             ApplyStretchPosition(cardRect, isRightSide, 0);
 
         if (pieceRect != null)
-            ApplyStretchPosition(pieceRect, isRightSide, piecePanelOffsetY);
+            ApplyStretchPosition(pieceRect, isRightSide, piecePanelOffsetY, piecePanelOffsetX);
 
         if (gameInfoRect != null)
-            ApplyStretchPosition(gameInfoRect, isRightSide, gameInfoOffsetY);
+            ApplyStretchPosition(gameInfoRect, isRightSide, gameInfoOffsetY, gameInfoOffsetX);
     }
 
-    private void ApplyStretchPosition(RectTransform rt, bool isRightSide, float offsetY)
+    private void ApplyStretchPosition(RectTransform rt, bool isRightSide, float offsetY, float offsetX = 0)
     {
         rt.anchorMin = new Vector2(0, 0);
         rt.anchorMax = new Vector2(1, 1);
@@ -140,13 +143,13 @@ public class CardDescriptionUI : MonoBehaviour
 
         if (isRightSide)
         {
-            rt.offsetMin = new Vector2(marginLarge, bottomMargin + offsetY);
-            rt.offsetMax = new Vector2(-marginSmall, -topMargin + offsetY);
+            rt.offsetMin = new Vector2(marginLarge + offsetX, bottomMargin + offsetY);
+            rt.offsetMax = new Vector2(-marginSmall + offsetX, -topMargin + offsetY);
         }
         else
         {
-            rt.offsetMin = new Vector2(marginSmall, bottomMargin + offsetY);
-            rt.offsetMax = new Vector2(-marginLarge, -topMargin + offsetY);
+            rt.offsetMin = new Vector2(marginSmall + offsetX, bottomMargin + offsetY);
+            rt.offsetMax = new Vector2(-marginLarge + offsetX, -topMargin + offsetY);
         }
     }
 }

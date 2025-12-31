@@ -10,6 +10,8 @@ public class NetUseCard : NetMessage
     public int targetX;
     public int targetY;
 
+    public int stepCost;
+
     public NetUseCard()
     {
         Code = OpCode.USE_CARD;
@@ -32,6 +34,7 @@ public class NetUseCard : NetMessage
 
         writer.WriteInt(targetX);
         writer.WriteInt(targetY);
+        writer.WriteInt(stepCost);
     }
 
     public override void Deserialize(DataStreamReader reader)
@@ -41,6 +44,7 @@ public class NetUseCard : NetMessage
 
         targetX = reader.ReadInt();
         targetY = reader.ReadInt();
+        stepCost  = reader.ReadInt();
     }
 
     public override void ReceivedOnClient()

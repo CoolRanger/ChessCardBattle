@@ -22,6 +22,7 @@ public class EnergyBar : MonoBehaviour
         if(energy + value > 10)
         {
             Debug.Log("Energy is full!");
+            SetEnergy(10);
             return;
         }
         SetEnergy(energy + value);

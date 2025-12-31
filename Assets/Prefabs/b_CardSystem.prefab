@@ -63,6 +63,7 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  - {fileID: 0}
   maxHandSize: 5
   selectedCard: {fileID: 0}
   energyBar: {fileID: 0}
@@ -74,3 +75,4 @@ MonoBehaviour:
   waitForSkyCastleMove: 0
   skyCastleRook: {fileID: 0}
   drawCardSound: {fileID: 8300000, guid: 79b7f3e00bc131546bfe333c11dcfb61, type: 3}
+  menuBackgoundSound: {fileID: 0}

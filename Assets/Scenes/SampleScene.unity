@@ -5404,8 +5404,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   myButton: {fileID: 1657157434}
   rectTransform: {fileID: 1657157433}
-  marginX: 250
-  marginY: 130
+  marginX: 35
+  marginY: 30
   delayTime: 0
 --- !u!95 &1657157438
 Animator:
@@ -5960,11 +5960,13 @@ MonoBehaviour:
   skillLogText: {fileID: 1819578043}
   gameInfoRect: {fileID: 478151821}
   gameInfoOffsetY: 350
+  gameInfoOffsetX: -50
   topMargin: 260
   bottomMargin: 260
   marginLarge: 1090
   marginSmall: 0
-  piecePanelOffsetY: 0
+  piecePanelOffsetY: -350
+  piecePanelOffsetX: 200
 --- !u!1 &1809563665
 GameObject:
   m_ObjectHideFlags: 0

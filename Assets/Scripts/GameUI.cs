@@ -117,7 +117,9 @@ public class GameUI : MonoBehaviour
     public void OnGameWon(int winner)
     {
         board.isGameActive = false;
+        gameInfoRoot.SetActive(false);
         gameOverPanel.SetActive(true);
+        CardDescriptionUI.Instance.pieceStatsRoot.SetActive(false);
         winnerText.text = (winner == 0) ? "White Wins!" : "Black Wins!";
     }
 

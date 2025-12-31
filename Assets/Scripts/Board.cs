@@ -1,5 +1,3 @@
-using NUnit.Framework;
-using System;
 using System.Collections.Generic;
 using Unity.Networking.Transport;
 using UnityEngine;
@@ -38,6 +36,8 @@ public class Board : MonoBehaviour
 
     private bool hasInitialized = false;
     public bool isGameActive = false;
+
+    [System.NonSerialized] public bool isPromotionPending;
     public int stepsThisTurn = 0;
 
     public AudioClip attackSound;
@@ -517,6 +517,8 @@ public class Board : MonoBehaviour
 
     public void CheckTurnEnd()
     {
+        if (isPromotionPending) return; 
+
         if (stepsThisTurn >= 2)
         {
             stepsThisTurn = 0;
@@ -527,10 +529,8 @@ public class Board : MonoBehaviour
 
             ProcessStatusEffects();
 
-            //new turn
             if (isWhiteTurn) whiteCardSystem.OnTurnStart();
             else blackCardSystem.OnTurnStart();
-
         }
     }
 
@@ -544,25 +544,24 @@ public class Board : MonoBehaviour
         if (piece.type != "pawn") return false;
 
         int endY = (piece.team == "white") ? 7 : 0;
+        if (piece.Y != endY) return false;
 
-        if (piece.Y == endY)
+        isPromotionPending = true;
+        if (currentTeam == -1 || IsLocalTurn())
         {
-            if (currentTeam == -1 || (currentTeam == 0 && isWhiteTurn) || (currentTeam == 1 && !isWhiteTurn))
+            PromotionUI.Instance.Show(piece.team, (selectedType) =>
             {
-                PromotionUI.Instance.Show(piece.team, (selectedType) =>
-                {
-                    PromotePawn(piece.X, piece.Y, selectedType);
-                    CheckTurnEnd();
-                });
-
-                return true;
-            }
+                PromotePawn(piece.X, piece.Y, selectedType);
+                CheckTurnEnd();  
+            });
         }
-        return false;
+
+        return true;
     }
 
     public void PromotePawn(int x, int y, string newType)
     {
+        isPromotionPending = false; 
         ChessPieces pawn = pieces[x, y];
         if (pawn == null) return;
 
@@ -928,6 +927,14 @@ public class Board : MonoBehaviour
 
         if (stepsThisTurn < 2 && CardDescriptionUI.Instance != null)
             CardDescriptionUI.Instance.UpdateTurnText(isWhiteTurn, stepsThisTurn);
+
+        ChessPieces moved = pieces[mm.targetX, mm.targetY];
+        if (moved != null && TryTriggerPromotion(moved))
+        {
+            clearAllTile();
+            return; 
+        }
+
         CheckTurnEnd();
     }
 
@@ -952,9 +959,9 @@ public class Board : MonoBehaviour
 
 
         if (isWhiteTurn)
-            whiteCardSystem.UseSpecificCard(uc.handIndex, uc.cardId, uc.targetX, uc.targetY);
+            whiteCardSystem.UseSpecificCard(uc.handIndex, uc.cardId, uc.targetX, uc.targetY, uc.stepCost);
         else
-            blackCardSystem.UseSpecificCard(uc.handIndex, uc.cardId, uc.targetX, uc.targetY);
+            blackCardSystem.UseSpecificCard(uc.handIndex, uc.cardId, uc.targetX, uc.targetY, uc.stepCost);
     }
 
     private void OnSkipClient(NetMessage msg)
@@ -968,7 +975,7 @@ public class Board : MonoBehaviour
     private void OnPromoteClient(NetMessage msg)
     {
         NetPromote np = msg as NetPromote;
-        if (IsLocalTurn()) return;
+        //if (IsLocalTurn()) return;
         PromotePawn(np.x, np.y, np.newType.ToString());
         CheckTurnEnd();
     }

@@ -54,7 +54,7 @@ public class CardSystem : MonoBehaviour
         if (isWhite) board.blackCardSystem.DeselectCard();
         else board.whiteCardSystem.DeselectCard();
 
-        energyBar.AddEnergy(1);
+        energyBar.AddEnergy(2);
 
         if (board.currentTeam == -1)
         {
@@ -83,7 +83,7 @@ public class CardSystem : MonoBehaviour
     public void DrawSpecificCard(int index)
     {
         
-        if (hand.Count >= maxHandSize) return;
+        //if (hand.Count >= maxHandSize) return;
         if (deckData.Count == 0) return;
         if (AudioManager.Instance != null && drawCardSound != null) AudioManager.Instance.PlaySFX(drawCardSound);
         GameObject go = Instantiate(cardPrefab, Vector3.zero, Quaternion.identity);
@@ -232,7 +232,7 @@ public class CardSystem : MonoBehaviour
         DeselectCard();
     }
 
-    public void UseSpecificCard(int index, int expectedCardId, int targetX = -1, int targetY = -1)
+    public void UseSpecificCard(int index, int expectedCardId, int targetX = -1, int targetY = -1, int stepCost = 0)
     {
         if (index < 0 || index >= hand.Count) return;
 
@@ -258,10 +258,19 @@ public class CardSystem : MonoBehaviour
                 }
             }
             if (!found)
-            {
-                Debug.LogError($"嚴重錯誤：手牌裡找不到 ID={expectedCardId} 的卡片！可能雙方 DeckData 設定不一致。");
-                return;
-            }
+{
+            // 印出目前手牌所有 ID，幫助對照
+            string currentHandIds = "";
+            foreach(var c in hand) currentHandIds += c.data.id + ", ";
+            
+            Debug.LogError($"嚴重錯誤：手牌同步失敗！\n" +
+                        $"預期尋找 ID: {expectedCardId}\n" +
+                        $"指定 Index: {index}\n" +
+                        $"目前手牌數量: {hand.Count}\n" +
+                        $"目前手牌內容 IDs: [{currentHandIds}]");
+                        
+            return;
+}
         }
 
         if (targetCard == null) return;
@@ -299,7 +308,10 @@ public class CardSystem : MonoBehaviour
             {
                 if (piece != null && piece.team == myTeam)
                 {
-                    if (piece.type == "king" || piece.type == "queen") piece.hp = piece.maxHP;
+                    if ((piece.type == "king" && piece.hp <= 7) || (piece.type == "queen" && piece.hp <= 4))
+                    {
+                        piece.hp = piece.maxHP;
+                    }
                 }
             }
         }
@@ -325,7 +337,11 @@ public class CardSystem : MonoBehaviour
             if (targetX != -1 && targetY != -1)
             {
                 ChessPieces target = board.pieces[targetX, targetY];
-                if (target != null) ApplyRushEffect(target);
+                if (target != null)
+                {
+                    
+                    ApplyRushEffect(target);
+                }
             }
         }
         else if (cName == "Heart")
@@ -333,7 +349,7 @@ public class CardSystem : MonoBehaviour
             if (targetX != -1 && targetY != -1)
             {
                 ChessPieces target = board.pieces[targetX, targetY];
-                if (target != null) target.hp++;
+                if (target != null) target.hp += 2;
             }
         }
         else if (cName == "Magic")
@@ -363,6 +379,16 @@ public class CardSystem : MonoBehaviour
         }
 
         RepositionHand();
+
+        if (stepCost > 0)
+{
+        board.stepsThisTurn += stepCost;
+
+        if (CardDescriptionUI.Instance != null && board.stepsThisTurn < 2)
+            CardDescriptionUI.Instance.UpdateTurnText(board.isWhiteTurn, board.stepsThisTurn);
+
+        board.CheckTurnEnd();
+}
     }
 
     public void OnTargetSelected(int x, int y)
@@ -713,21 +739,32 @@ public class CardSystem : MonoBehaviour
 
     private void ExecuteRush(ChessPieces pawn)
     {
-        PlayCardSound(pendingCard.data);
-        if (CardDescriptionUI.Instance != null)
-            CardDescriptionUI.Instance.ShowSkillLog(isWhite, pendingCard.data.displayName);
-
+        CardData data = pendingCard.data; 
+        GameObject cardObj = pendingCard.gameObject;
+        int cost = data.cost;
         int index = hand.IndexOf(pendingCard);
-        int cardId = pendingCard.data.id;
-
+        int cardId = data.id;
         int originalX = pawn.X;
         int originalY = pawn.Y;
 
+        PlayCardSound(data);
+        if (CardDescriptionUI.Instance != null)
+            CardDescriptionUI.Instance.ShowSkillLog(isWhite, data.displayName);
+
         ApplyRushEffect(pawn);
 
-        energyBar.MinusEnergy(pendingCard.data.cost);
+        board.stepsThisTurn += 1;
+
+        if (CardDescriptionUI.Instance != null && board.stepsThisTurn < 2)
+            CardDescriptionUI.Instance.UpdateTurnText(board.isWhiteTurn, board.stepsThisTurn);
+
+        int endY = (pawn.team == "white") ? 7 : 0;
+        if (pawn.Y != endY)
+            board.CheckTurnEnd();
+
+        energyBar.MinusEnergy(cost);
         hand.RemoveAt(index);
-        Destroy(pendingCard.gameObject);
+        Destroy(cardObj); 
         RepositionHand();
 
         if (board.currentTeam != -1)
@@ -737,18 +774,20 @@ public class CardSystem : MonoBehaviour
             uc.cardId = cardId;
             uc.targetX = originalX;
             uc.targetY = originalY;
+            uc.stepCost = 1;
             Client.Instance.SendToServer(uc);
         }
 
         CancelTargeting();
+        
     }
 
-    private void ApplyRushEffect(ChessPieces pawn)
-    {
-        int endY = (pawn.team == "white") ? 7 : 0;
-        pawn.moveTo(pawn.X, endY);
-        board.TryTriggerPromotion(pawn);
-    }
+   private void ApplyRushEffect(ChessPieces pawn)
+{
+    int endY = (pawn.team == "white") ? 7 : 0;
+    pawn.moveTo(pawn.X, endY);
+    board.TryTriggerPromotion(pawn);
+}
 
     private void ExecuteHeart(ChessPieces targetPiece)
     {
@@ -759,7 +798,7 @@ public class CardSystem : MonoBehaviour
         int index = hand.IndexOf(pendingCard);
         int cardId = pendingCard.data.id;
 
-        targetPiece.hp++;
+        targetPiece.hp += 2;
 
         energyBar.MinusEnergy(pendingCard.data.cost);
         hand.RemoveAt(index);
@@ -818,6 +857,14 @@ public class CardSystem : MonoBehaviour
 
         ApplyMagicEffect(targetPiece, dest.x, dest.y);
 
+        board.stepsThisTurn += 1;
+
+        if (CardDescriptionUI.Instance != null && board.stepsThisTurn < 2)
+            CardDescriptionUI.Instance.UpdateTurnText(board.isWhiteTurn, board.stepsThisTurn);
+
+        // 如果你有做 Magic->pawn 升變，就要像 Rush 一樣判斷是否在終點列才決定要不要 CheckTurnEnd
+        board.CheckTurnEnd();
+
         if (board.currentTeam != -1)
         {
             NetUseCard uc = new NetUseCard();
@@ -825,6 +872,7 @@ public class CardSystem : MonoBehaviour
             uc.cardId = cardId;
             uc.targetX = packedX;
             uc.targetY = packedY;
+            uc.stepCost = 1;
             Client.Instance.SendToServer(uc);
         }
 
@@ -834,13 +882,7 @@ public class CardSystem : MonoBehaviour
     private void ApplyMagicEffect(ChessPieces piece, int destX, int destY)
     {
         piece.moveTo(destX, destY);
-
-        board.stepsThisTurn++;
-
-        if (CardDescriptionUI.Instance != null)
-            CardDescriptionUI.Instance.UpdateTurnText(board.isWhiteTurn, board.stepsThisTurn);
-
-        board.CheckTurnEnd();
+        if (board.TryTriggerPromotion(piece)) return;
     }
 
     public void ResetCards()
