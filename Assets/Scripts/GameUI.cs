@@ -36,7 +36,7 @@ public class GameUI : MonoBehaviour
             Camera.main.transform.rotation = Quaternion.identity;
         }
 
-        StartCoroutine(MoveCameraToBoard(new Vector3(0, 0, -10), Quaternion.identity, 1.5f));
+        StartCoroutine(MoveCameraToBoard(new Vector3(0, 0, -10), Quaternion.identity, 0f));
     }
 
     public void OnOnlineGameStart()
@@ -55,7 +55,7 @@ public class GameUI : MonoBehaviour
             targetRot = Quaternion.Euler(0, 0, 180);
         }
 
-        StartCoroutine(MoveCameraToBoard(new Vector3(0, 0, -10), targetRot, 1.5f));
+        StartCoroutine(MoveCameraToBoard(new Vector3(0, 0, -10), targetRot, 0f));
     }
 
     private IEnumerator MoveCameraToBoard(Vector3 targetPos, Quaternion targetRot, float duration)
@@ -147,7 +147,7 @@ public class GameUI : MonoBehaviour
 
         if (Camera.main != null)
         {
-            StartCoroutine(MoveCameraToBoard(new Vector3(0, 15, -10), Quaternion.identity, 1.0f));
+            StartCoroutine(MoveCameraToBoard(new Vector3(0, 15, -10), Quaternion.identity, 0f));
         }
     }
 }
