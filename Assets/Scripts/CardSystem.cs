@@ -893,6 +893,8 @@ public class CardSystem : MonoBehaviour
     private void ApplyMagicEffect(ChessPieces piece, int destX, int destY)
     {
         piece.moveTo(destX, destY);
+        if (piece.team == "white") board.lastWhiteMoved = null;
+        else board.lastBlackMoved = null;
         if (board.TryTriggerPromotion(piece)) return;
     }
 
