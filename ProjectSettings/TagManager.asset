@@ -50,5 +50,11 @@ TagManager:
   - name: piece
     uniqueID: 1304301613
     locked: 0
+  - name: boarder
+    uniqueID: 1694599511
+    locked: 0
+  - name: gamestuff
+    uniqueID: 26672667
+    locked: 0
   m_RenderingLayers:
   - Default

@@ -16,7 +16,9 @@ public class GameUI : MonoBehaviour
     [SerializeField] private GameObject gameOverPanel;
     [SerializeField] private TextMeshProUGUI winnerText;
 
+    public GameObject gameInfoRoot;
 
+    public AudioClip menuBGM;
 
     private void Awake()
     {
@@ -27,7 +29,7 @@ public class GameUI : MonoBehaviour
     {
         menuAnimator.SetTrigger("InGameMenu");
         board.StartLocalGame();
-
+        
         if (Camera.main != null)
         {
             Camera.main.transform.position = new Vector3(0, 15, -10);
@@ -129,8 +131,9 @@ public class GameUI : MonoBehaviour
 
     public void OnMenuButton()
     {
+        if (AudioManager.Instance != null && menuBGM != null) AudioManager.Instance.PlayBGM(menuBGM);
         gameOverPanel.SetActive(false);
-
+        gameInfoRoot.SetActive(false);
         menuAnimator.SetTrigger("StartMenu");
 
         server.ShutDown();

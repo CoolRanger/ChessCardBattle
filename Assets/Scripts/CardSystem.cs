@@ -26,6 +26,7 @@ public class CardSystem : MonoBehaviour
     public ChessPieces skyCastleRook = null;
 
     public AudioClip drawCardSound;
+    public AudioClip menuBackgoundSound;
 
     void Awake()
     {

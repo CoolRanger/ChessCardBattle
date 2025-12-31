@@ -65,7 +65,7 @@ public class ChessPieces : MonoBehaviour
     public void moveTo(int x, int y)
     {
 
-       AudioManager.Instance.PlaySFX(moveSound);
+        AudioManager.Instance.PlaySFX(moveSound);
         int oldX = X, oldY = Y;
         if (type == "pawn")
         {

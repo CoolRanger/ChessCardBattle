@@ -17,6 +17,8 @@ public class Board : MonoBehaviour
     public GameObject knightPrefab;
     public float padding = 1f;
     public float tileSize = 1f;
+    public float startX = -7f;
+    public float startY = -7.5f;
 
     public Tile[,] tiles = new Tile[8, 8];
     public ChessPieces[,] pieces = new ChessPieces[8, 8];
@@ -38,6 +40,10 @@ public class Board : MonoBehaviour
     public bool isGameActive = false;
     public int stepsThisTurn = 0;
 
+    public AudioClip attackSound;
+    public AudioClip menuBGM;
+    public AudioClip battleBGM;
+
     //(0: white, 1: black, -1: Local)
     public int currentTeam = -1;
 
@@ -54,6 +60,7 @@ public class Board : MonoBehaviour
 
     void Start()
     {
+        if (AudioManager.Instance != null && menuBGM != null) AudioManager.Instance.PlayBGM(menuBGM);
         if (Client.Instance != null)
         {
             Client.Instance.connectionDropped -= OnServerDisconnected;
@@ -145,10 +152,14 @@ public class Board : MonoBehaviour
     public void StartLocalGame()
     {
         InitBoard();
+        if (AudioManager.Instance != null && menuBGM != null) AudioManager.Instance.PlayBGM(battleBGM);
         currentTeam = -1;
         isGameActive = true;
         ResetGame();
     }
+
+    public float blackBarX, blackBarY;
+    public float whiteBarX, whiteBarY;
 
     public void InitBoard()
     {
@@ -157,12 +168,12 @@ public class Board : MonoBehaviour
             GenerateBoard();
 
             EnergyBar blackBar = Instantiate(blackEnergyBarPrefab).GetComponent<EnergyBar>();
-            blackBar.transform.position = new Vector3(-8, 0, 0);
+            blackBar.transform.position = new Vector3(blackBarX, blackBarY, 0);
             blackBar.SetEnergy(0);
             blackCardSystem.energyBar = blackBar;
 
             EnergyBar whiteBar = Instantiate(whiteEnergyBarPrefab).GetComponent<EnergyBar>();
-            whiteBar.transform.position = new Vector3(-10, 0, 0);
+            whiteBar.transform.position = new Vector3(whiteBarX, whiteBarY, 0);
             whiteBar.SetEnergy(0);
             whiteCardSystem.energyBar = whiteBar;
 
@@ -208,15 +219,15 @@ public class Board : MonoBehaviour
     void GenerateBoard()
     {
         //offset
-        float startX = -(10 * tileSize) / 2f;
-        float startY = -(7.5f * tileSize) / 2f;
+        float sX = (startX * tileSize) / 2f;
+        float sY = (startY * tileSize) / 2f;
 
         //generate tiles
         for (int x = 0; x < 8; x++)
         {
             for (int y = 0; y < 8; y++)
             {
-                Vector3 pos = new Vector3(startX + x * (tileSize + padding), startY + y * (tileSize + padding), 0);
+                Vector3 pos = new Vector3(sX + x * (tileSize + padding), sY + y * (tileSize + padding), 0);
                 Tile tile = Instantiate(tilePrefab, pos, Quaternion.identity, transform).GetComponent<Tile>();
 
                 tiles[x, y] = tile;
@@ -424,6 +435,7 @@ public class Board : MonoBehaviour
         }
         else if (targetTile.is_attack_move)
         {
+            if (AudioManager.Instance != null && attackSound != null) AudioManager.Instance.PlaySFX(attackSound);
             if (stepsThisTurn != 0)
             {
                 Debug.Log("Second move cannot attack");

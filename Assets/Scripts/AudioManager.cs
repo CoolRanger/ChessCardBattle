@@ -6,6 +6,7 @@ public class AudioManager : MonoBehaviour
 
     [Header("Components")]
     public AudioSource sfxSource;
+    public AudioSource bgmSource;
 
     void Awake()
     {
@@ -26,5 +27,12 @@ public class AudioManager : MonoBehaviour
         {
             sfxSource.PlayOneShot(clip, volume);
         }
+    }
+
+    public void PlayBGM(AudioClip clip, float volume = 1.0f)
+    {
+        bgmSource.clip = clip;
+        bgmSource.loop = true;
+        bgmSource.Play();
     }
 }
