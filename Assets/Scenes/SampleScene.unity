@@ -4705,7 +4705,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4279505944
   m_fontColor: {r: 0.09433961, g: 0.076717675, b: 0.076717675, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -5597,10 +5597,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1525156938}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 544.63, y: 0}
-  m_SizeDelta: {x: 830.7368, y: 559.5393}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 544.6308, y: -0.11517334}
+  m_SizeDelta: {x: -1089.2616, y: -520.23035}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1806648628
 MonoBehaviour:
@@ -5662,11 +5662,11 @@ MonoBehaviour:
   skillLogText: {fileID: 1819578043}
   gameInfoRect: {fileID: 478151821}
   gameInfoOffsetY: 350
-  topMargin: 200
-  bottomMargin: 200
-  marginLarge: 1225
+  topMargin: 260
+  bottomMargin: 260
+  marginLarge: 1090
   marginSmall: 0
-  piecePanelOffsetY: -300
+  piecePanelOffsetY: 0
 --- !u!1 &1809563665
 GameObject:
   m_ObjectHideFlags: 0
