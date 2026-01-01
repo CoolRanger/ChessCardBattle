@@ -46,7 +46,10 @@ public class Board : MonoBehaviour
     public AudioClip battleBGM;
 
     public float attackShakeDuration = 0.2f;
-    public float attackShakeMagnitude = 0.3f; 
+    public float attackShakeMagnitude = 0.3f;
+
+    private List<Tile> redTiles = new List<Tile>();
+    private bool redTilesByWhite = false;
 
     //(0: white, 1: black, -1: Local)
     public int currentTeam = -1;
@@ -61,9 +64,27 @@ public class Board : MonoBehaviour
         UnRegisterEvents();
     }
 
+    /*[SerializeField] Vector2Int aspectRatio = new(16, 9);
+    public bool fullScreen = true;*/
 
     void Start()
     {
+        /*Vector2Int size = default;
+        float currentRatio = (float)Screen.width / Screen.height;
+        float ratioGoal = (float)aspectRatio.x / aspectRatio.y;
+        if (currentRatio > ratioGoal)
+        {
+            size.y = Screen.height;
+            size.x = (int)(Screen.height * ratioGoal);
+        }
+        else
+        {
+            size.y = (int)(Screen.width / ratioGoal);
+            size.x = Screen.width;
+        }
+        Screen.SetResolution(size.x, size.y, fullScreen);*/
+
+
         if (AudioManager.Instance != null && menuBGM != null) AudioManager.Instance.PlayBGM(menuBGM);
         if (Client.Instance != null)
         {
@@ -243,6 +264,29 @@ public class Board : MonoBehaviour
 
         if (blackCardSystem != null)
             blackCardSystem.transform.rotation = Quaternion.Euler(0, 0, 180);
+    }
+
+    public void AddRedTile(int x, int y)
+    {
+
+        if (redTiles.Count > 0 && redTilesByWhite != isWhiteTurn) ClearRedTiles();
+        redTilesByWhite = isWhiteTurn;
+
+        if (isOnBoard(x, y))
+        {
+            Tile t = tiles[x, y];
+            if (!redTiles.Contains(t))
+            {
+                t.SetAsLastAttacked(true);
+                redTiles.Add(t);
+            }
+        }
+    }
+
+    public void ClearRedTiles()
+    {
+        foreach (var t in redTiles) if (t != null) t.SetAsLastAttacked(false);
+        redTiles.Clear();
     }
 
     void GenerateBoard()
@@ -457,11 +501,18 @@ public class Board : MonoBehaviour
             if (AudioManager.Instance != null && attackSound != null) AudioManager.Instance.PlaySFX(attackSound);
             if (CameraShake.Instance != null) CameraShake.Instance.Shake(attackShakeDuration, attackShakeMagnitude);
 
+            if (selectedPiece.team == "white") lastWhiteMoved = selectedPiece;
+            else if (selectedPiece.team == "black") lastBlackMoved = selectedPiece;
+
+            int victimX = x;
+            int victimY = y;
+
             if (targetTile.is_enpassant)
             {
                 Debug.Log("enpassant attack");
-                if (isWhiteTurn) targetPiece = pieces[x, y - 1];
-                else targetPiece = pieces[x, y + 1];
+                if (isWhiteTurn) victimY = y - 1;
+                else victimY = y + 1;
+                targetPiece = pieces[victimX, victimY];
             }
 
             int damage = selectedPiece.atk;
@@ -469,7 +520,9 @@ public class Board : MonoBehaviour
 
             if (targetPiece.hp <= 0)
             {
-                pieces[x, y] = null;
+
+                pieces[victimX, victimY] = null;
+
                 if (targetPiece.type == "king")
                 {
                     int winner = isWhiteTurn ? 0 : 1;
@@ -478,9 +531,12 @@ public class Board : MonoBehaviour
                     GameUI.Instance.OnGameWon(winner);
                     return;
                 }
+
                 Destroy(targetPiece.gameObject);
                 selectedPiece.moveTo(x, y);
             }
+            else AddRedTile(victimX, victimY);
+
 
             selectedPiece = null;
             stepsThisTurn++;
@@ -523,7 +579,7 @@ public class Board : MonoBehaviour
 
         clearAllTile();
 
-        //if it was valid and we're not in muti, sent it to server
+        //if it was valid and we're in muti, sent it to server
         if (validMove && currentTeam != -1)
         {
             NetMakeMove mm = new NetMakeMove();
@@ -548,7 +604,7 @@ public class Board : MonoBehaviour
                 CardDescriptionUI.Instance.UpdateTurnText(isWhiteTurn, 0);
 
             ProcessStatusEffects();
-
+            if (redTiles.Count > 0 && isWhiteTurn == redTilesByWhite) ClearRedTiles();
             if (isWhiteTurn) whiteCardSystem.OnTurnStart();
             else blackCardSystem.OnTurnStart();
         }
@@ -691,12 +747,9 @@ public class Board : MonoBehaviour
 
                     if (obstaclesFound == 1) continue;
 
-                    else 
+                    else if (targetPiece.team != rook.team)
                     {
-                        if (stepsThisTurn == 0 && targetPiece.team != rook.team)
-                        {
-                            tiles[nextX, nextY].setAttackMove();
-                        }
+                        tiles[nextX, nextY].setAttackMove();
                         break;
                     }
                 }
@@ -929,6 +982,7 @@ public class Board : MonoBehaviour
         {
             int epY = (targetP.team == "white") ? mm.targetY - 1 : mm.targetY + 1;
             ChessPieces epPawn = pieces[mm.targetX, epY];
+            AddRedTile(mm.targetX, mm.targetY);
 
             if (epPawn != null)
             {
@@ -991,6 +1045,7 @@ public class Board : MonoBehaviour
                 Destroy(enemyPiece.gameObject);
                 targetP.moveTo(mm.targetX, mm.targetY);
             }
+            else AddRedTile(mm.targetX, mm.targetY);
         }
         else
         {

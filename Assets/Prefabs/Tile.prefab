@@ -154,8 +154,14 @@ MonoBehaviour:
   SelectedFrame: {fileID: 21300000, guid: 0f0ce5941d204f14893e04ec0048c086, type: 3}
   AtkIcon: {fileID: 21300000, guid: b66ca8c3486844d479203e397bd60b0b, type: 3}
   MoveIcon: {fileID: 21300000, guid: f89266049da545a43961e1e4245eacdc, type: 3}
+  OnTileColor: {r: 0.47750086, g: 0.9622642, b: 0.9028415, a: 1}
+  redColor: {r: 0.78113204, g: 0.17839207, b: 0.16359559, a: 1}
   X: 0
   Y: 0
   is_selected: 0
   is_legal_move: 0
   is_attack_move: 0
+  is_left_castling: 0
+  is_right_castling: 0
+  is_enpassant: 0
+  isLastAttackedTile: 0

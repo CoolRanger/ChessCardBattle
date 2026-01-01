@@ -236,6 +236,8 @@ public class CardSystem : MonoBehaviour
         {
             NetUseCard uc = new NetUseCard();
             uc.cardId = cardId;
+            uc.stepCost = 0;
+            uc.team = isWhite ? 0 : 1;
             Client.Instance.SendToServer(uc);
         }
 
@@ -704,6 +706,7 @@ public class CardSystem : MonoBehaviour
                 if (target.type == "king") GameUI.Instance.OnGameWon(isWhite ? 0 : 1);
                 Destroy(target.gameObject);
             }
+            else board.AddRedTile(x, y);
         }
     }
 

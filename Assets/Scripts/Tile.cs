@@ -1,5 +1,6 @@
 using System.Net.NetworkInformation;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class Tile : MonoBehaviour
 {
@@ -13,6 +14,8 @@ public class Tile : MonoBehaviour
 
     SpriteRenderer sr;
     SpriteRenderer IcnRenderer;
+    public Color OnTileColor;
+    public Color redColor;
     Color originalColor;
 
     public int X, Y;
@@ -24,6 +27,7 @@ public class Tile : MonoBehaviour
     public bool is_left_castling = false;
     public bool is_right_castling = false;
     public bool is_enpassant = false;
+    public bool isLastAttackedTile = false;
 
     bool is_white = false;
 
@@ -48,15 +52,21 @@ public class Tile : MonoBehaviour
 
     public void clearTile()
     {
-        sr.color = originalColor;
         sr.sprite = is_white ? whiteSprite : blackSprite;
+        IcnRenderer.sprite = null;
+
         is_selected = false;
         is_legal_move = false;
         is_attack_move = false;
         is_left_castling = false;
         is_right_castling = false;
         //is_enpassant = false;
-        IcnRenderer.sprite = null;
+        
+
+
+        if (isLastAttackedTile) sr.color = redColor; 
+        else sr.color = originalColor;
+
     }
 
     public void SetColor(Color color)
@@ -84,17 +94,29 @@ public class Tile : MonoBehaviour
         is_attack_move = true;
     }
 
+    public void SetAsLastAttacked(bool state)
+    {
+        isLastAttackedTile = state;
+        if (state)
+        {
+            sr.sprite = is_white ? whiteSprite : blackSprite;
+            IcnRenderer.sprite = null;
+            sr.color = redColor;
+        }
+        else clearTile();
+    }
+
 
     void OnMouseEnter()
     {
         if (!board.isGameActive || (PromotionUI.Instance != null && PromotionUI.Instance.IsActive)) return;
-        if (!is_selected && !is_attack_move && !is_legal_move) SetColor(Color.blue);
+        if (!is_selected && !is_attack_move && !is_legal_move && !isLastAttackedTile) SetColor(OnTileColor);
     }
 
     void OnMouseExit()
     {
         if (!board.isGameActive || (PromotionUI.Instance != null && PromotionUI.Instance.IsActive)) return;
-        if (!is_selected && !is_attack_move && !is_legal_move) SetColor(originalColor);
+        if (!is_selected && !is_attack_move && !is_legal_move && !isLastAttackedTile) SetColor(originalColor);
     }
 
 
