@@ -41,21 +41,37 @@ public class SettingsUI : MonoBehaviour
 
     public void OpenSettings()
     {
+        if (GameUI.Instance != null && GameUI.Instance.btnSound != null && AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(GameUI.Instance.btnSound);
+        }
         settingsPanel.SetActive(true);
     }
 
     public void CloseSettings()
     {
+        if (GameUI.Instance != null && GameUI.Instance.btnSound != null && AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(GameUI.Instance.btnSound);
+        }
         settingsPanel.SetActive(false);
         creditsPanel.SetActive(false);
     }
 
     public void OpenCredits()
     {
+        if (GameUI.Instance != null && GameUI.Instance.btnSound != null && AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(GameUI.Instance.btnSound);
+        }
         creditsPanel.SetActive(true);
     }
     public void CloseCredits()
     {
+        if (GameUI.Instance != null && GameUI.Instance.btnSound != null && AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(GameUI.Instance.btnSound);
+        }
         creditsPanel.SetActive(false);
     }
 }

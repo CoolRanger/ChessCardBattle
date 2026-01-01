@@ -27,7 +27,10 @@ public class SkipButtonUI : MonoBehaviour
     {
         if (board == null) Debug.LogError("SkipButtonUI §ä¤£¨ì Board¡I");
 
-        skipBtn.onClick.AddListener(() => board.OnSkipButtonUser());
+        skipBtn.onClick.AddListener(() => {
+            board.OnSkipButtonUser();
+            PlaySkipSound();
+        });
         surrenderBtn.onClick.AddListener(() => GameUI.Instance.OnsurrenderButton());
     }
 
@@ -35,6 +38,15 @@ public class SkipButtonUI : MonoBehaviour
     {
         UpdatePosition();
         ShowButtons();
+    }
+
+    void PlaySkipSound()
+    {
+        if (GameUI.Instance != null && AudioManager.Instance != null)
+        {
+            if (GameUI.Instance.btnSound != null)
+                AudioManager.Instance.PlaySFX(GameUI.Instance.btnSound);
+        }
     }
 
     public void ResetState()

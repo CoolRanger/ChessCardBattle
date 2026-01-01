@@ -17,32 +17,47 @@ public class GameUI : MonoBehaviour
     [SerializeField] private GameObject gameOverPanel;
     [SerializeField] private TextMeshProUGUI winnerText;
 
+    public GameObject settingsButtonObj;
+
     public GameObject gameInfoRoot;
 
     public AudioClip menuBGM;
+    public AudioClip btnSound;
+
+    public Transform cameraRig;
 
     private void Awake()
     {
         Instance = this;
     }
 
-
+    private void PlayButtonSound()
+    {
+        if (AudioManager.Instance != null && btnSound != null)
+        {
+            AudioManager.Instance.PlaySFX(btnSound);
+        }
+    }
 
     public void OnLocalGameButton()
     {
+        PlayButtonSound();
         menuAnimator.SetTrigger("InGameMenu");
 
         gameInfoRoot.SetActive(true);
+        if (settingsButtonObj != null) settingsButtonObj.SetActive(false);
 
         if (SkipButtonUI.Instance != null) SkipButtonUI.Instance.InitializeGameUI();
 
 
         board.StartLocalGame();
-        
-        if (Camera.main != null)
+
+        if (cameraRig != null)
         {
-            Camera.main.transform.position = new Vector3(0, 15, -10);
-            Camera.main.transform.rotation = Quaternion.identity;
+            cameraRig.position = new Vector3(0, 15, -10);
+            cameraRig.rotation = Quaternion.identity;
+
+            StartCoroutine(MoveCameraToBoard(new Vector3(0, 0, -10), Quaternion.identity, 0f));
         }
 
         StartCoroutine(MoveCameraToBoard(new Vector3(0, 0, -10), Quaternion.identity, 0f));
@@ -51,15 +66,15 @@ public class GameUI : MonoBehaviour
     public void OnOnlineGameStart()
     {
         menuAnimator.SetTrigger("InGameMenu");
-
         gameInfoRoot.SetActive(true);
+        if (settingsButtonObj != null) settingsButtonObj.SetActive(false);
 
         if (SkipButtonUI.Instance != null) SkipButtonUI.Instance.InitializeGameUI();
 
-        if (Camera.main != null)
+        if (cameraRig != null)
         {
-            Camera.main.transform.position = new Vector3(0, 15, -10);
-            Camera.main.transform.rotation = Quaternion.identity;
+            cameraRig.position = new Vector3(0, 15, -10);
+            cameraRig.rotation = Quaternion.identity;
         }
 
         Quaternion targetRot = Quaternion.identity;
@@ -73,11 +88,10 @@ public class GameUI : MonoBehaviour
 
     private IEnumerator MoveCameraToBoard(Vector3 targetPos, Quaternion targetRot, float duration)
     {
-        if (Camera.main == null) yield break;
+        if (cameraRig == null) yield break; 
 
-        Transform camTransform = Camera.main.transform;
-        Vector3 startPos = camTransform.position;
-        Quaternion startRot = camTransform.rotation; 
+        Vector3 startPos = cameraRig.position; 
+        Quaternion startRot = cameraRig.rotation;
         float time = 0;
 
         while (time < duration)
@@ -85,24 +99,27 @@ public class GameUI : MonoBehaviour
             float t = time / duration;
             t = t * t * t * (t * (6f * t - 15f) + 10f);
 
-            camTransform.position = Vector3.Lerp(startPos, targetPos, t);
-            camTransform.rotation = Quaternion.Lerp(startRot, targetRot, t);
+            cameraRig.position = Vector3.Lerp(startPos, targetPos, t);
+            cameraRig.rotation = Quaternion.Lerp(startRot, targetRot, t);
 
             time += Time.deltaTime;
             yield return null;
         }
 
-        camTransform.position = targetPos;
-        camTransform.rotation = targetRot;
+        cameraRig.position = targetPos;
+        cameraRig.rotation = targetRot;
     }
 
     public void OnOnlineGameButton()
     {
+        PlayButtonSound();
+        if (settingsButtonObj != null) settingsButtonObj.SetActive(false);
         menuAnimator.SetTrigger("OnlineMenu");
     }
 
     public void OnOnlineHostButton()
     {
+        PlayButtonSound();
         server.Init(8007);
         client.Init("127.0.0.1", 8007);
         menuAnimator.SetTrigger("HostMenu");
@@ -110,6 +127,7 @@ public class GameUI : MonoBehaviour
 
     public void OnOnlineConnectButton()
     {
+        PlayButtonSound();
         string ip = addressInput.text;
         if (string.IsNullOrEmpty(ip)) ip = "127.0.0.1";
         client.Init(ip, 8007);
@@ -117,11 +135,14 @@ public class GameUI : MonoBehaviour
 
     public void OnOnlineBackButton()
     {
+        PlayButtonSound();
+        if (settingsButtonObj != null) settingsButtonObj.SetActive(true);
         menuAnimator.SetTrigger("StartMenu");
     }
 
     public void OnHostBackButton()
     {
+        PlayButtonSound();
         server.ShutDown();
         client.ShutDown();
         menuAnimator.SetTrigger("OnlineMenu");
@@ -143,6 +164,7 @@ public class GameUI : MonoBehaviour
 
     public void OnRestartButton()
     {
+        PlayButtonSound();
         gameOverPanel.SetActive(false);
         board.StartLocalGame();
 
@@ -151,9 +173,11 @@ public class GameUI : MonoBehaviour
 
     public void OnMenuButton()
     {
+        PlayButtonSound();
         if (AudioManager.Instance != null && menuBGM != null) AudioManager.Instance.PlayBGM(menuBGM);
         gameOverPanel.SetActive(false);
         gameInfoRoot.SetActive(false);
+        if (settingsButtonObj != null) settingsButtonObj.SetActive(true);
         if (SkipButtonUI.Instance != null) SkipButtonUI.Instance.ResetState();
         menuAnimator.SetTrigger("StartMenu");
 
@@ -166,7 +190,7 @@ public class GameUI : MonoBehaviour
             CardDescriptionUI.Instance.HidePieceInfo(); 
         }
 
-        if (Camera.main != null)
+        if (cameraRig != null)
         {
             StartCoroutine(MoveCameraToBoard(new Vector3(0, 15, -10), Quaternion.identity, 0f));
         }
@@ -174,8 +198,9 @@ public class GameUI : MonoBehaviour
 
     public void OnsurrenderButton()
     {
-        if (!board.isGameActive) return;
 
+        if (!board.isGameActive) return;
+        PlayButtonSound();
         if (board.currentTeam != -1)
         {
             NetSurrender ns = new NetSurrender();

@@ -213,7 +213,8 @@ public class CardSystem : MonoBehaviour
         if (cName == "DeathJudgement")
         {
             if (board.stepsThisTurn > 0) { Debug.Log("請在回合開始時使用！"); return; }
-            isTargeting = true; pendingCard = selectedCard;
+            isTargeting = true; 
+            pendingCard = selectedCard;
             board.HighlightDeathJudgementTargets(isWhite ? "white" : "black");
             return;
         }
@@ -234,7 +235,6 @@ public class CardSystem : MonoBehaviour
         if (board.currentTeam != -1) 
         {
             NetUseCard uc = new NetUseCard();
-            uc.handIndex = index;
             uc.cardId = cardId;
             Client.Instance.SendToServer(uc);
         }
@@ -292,8 +292,26 @@ public class CardSystem : MonoBehaviour
         }
 
         string cName = targetCard.data.cardName;
-        if (cName == "FireBall")
+        if (cName == "DeathJudgement")
         {
+
+            if (targetX != -1 && targetY != -1)
+            {
+                if (CameraShake.Instance != null) CameraShake.Instance.Shake(board.attackShakeDuration, board.attackShakeMagnitude+0.1f);
+
+                ChessPieces target = board.pieces[targetX, targetY];
+                if (target != null)
+                {
+                    board.pieces[targetX, targetY] = null;
+                    board.tiles[targetX, targetY].clearTile();
+                    Destroy(target.gameObject);
+                }
+            }
+        }
+        else if (cName == "FireBall")
+        {
+            if (CameraShake.Instance != null) CameraShake.Instance.Shake(board.attackShakeDuration, board.attackShakeMagnitude+0.1f);
+
             if (targetX != -1 && targetY != -1) ApplyFireBallDamage(targetX, targetY);
         }
         else if (cName == "Blood")
@@ -402,6 +420,19 @@ public class CardSystem : MonoBehaviour
 }
     }
 
+    public void UseSpecificCardById(int cardId, int targetX, int targetY, int stepCost)
+    {
+        Card targetCard = hand.Find(c => c.data.id == cardId);
+        if (targetCard == null)
+        {
+            Debug.LogError($"[SYNC FAIL] 找不到 cardId={cardId}");
+            return;
+        }
+
+        int index = hand.IndexOf(targetCard);
+        UseSpecificCard(index, cardId, targetX, targetY, stepCost);
+    }
+
     public void OnTargetSelected(int x, int y)
     {
         if (!isTargeting || pendingCard == null) return;
@@ -486,8 +517,8 @@ public class CardSystem : MonoBehaviour
         if (board.currentTeam != -1)
         {
             NetUseCard uc = new NetUseCard();
-            uc.handIndex = index;
-            uc.cardId = cardId; 
+            uc.cardId = cardId;
+            uc.team = isWhite ? 0 : 1;
             Client.Instance.SendToServer(uc);
         }
 
@@ -501,29 +532,42 @@ public class CardSystem : MonoBehaviour
     private void ExecuteDeathJudgement(ChessPieces targetPiece)
     {
         PlayCardSound(pendingCard.data);
+
         int index = hand.IndexOf(pendingCard);
         int cardId = pendingCard.data.id;
+        int tx = targetPiece.X;
+        int ty = targetPiece.Y;
 
-        board.pieces[targetPiece.X, targetPiece.Y] = null;
-        board.tiles[targetPiece.X, targetPiece.Y].clearTile();
+        if (CameraShake.Instance != null)
+            CameraShake.Instance.Shake(board.attackShakeDuration, board.attackShakeMagnitude);
+
+        if (CardDescriptionUI.Instance != null)
+            CardDescriptionUI.Instance.ShowSkillLog(isWhite, pendingCard.data.displayName);
+
+        board.pieces[tx, ty] = null;
+        board.tiles[tx, ty].clearTile();
         Destroy(targetPiece.gameObject);
 
         energyBar.MinusEnergy(pendingCard.data.cost);
-        board.stepsThisTurn += 2;
+
         hand.RemoveAt(index);
         Destroy(pendingCard.gameObject);
         RepositionHand();
 
+        board.stepsThisTurn += 2;
+
         if (board.currentTeam != -1)
         {
             NetUseCard uc = new NetUseCard();
-            uc.handIndex = index;
-            uc.cardId = cardId; 
+            uc.cardId = cardId;
+            uc.targetX = tx;
+            uc.targetY = ty;
+            uc.stepCost = 2;
+            uc.team = isWhite ? 0 : 1;
             Client.Instance.SendToServer(uc);
         }
-
-        CancelTargeting();
         board.CheckTurnEnd();
+        CancelTargeting();
     }
 
     private void ExecuteFireBall(int refX, int refY)
@@ -545,10 +589,11 @@ public class CardSystem : MonoBehaviour
         if (board.currentTeam != -1)
         {
             NetUseCard uc = new NetUseCard();
-            uc.handIndex = index;
             uc.cardId = cardId;
             uc.targetX = refX;
             uc.targetY = refY;
+            uc.stepCost = 0;
+            uc.team = isWhite ? 0 : 1; 
             Client.Instance.SendToServer(uc);
         }
         CancelTargeting();
@@ -573,10 +618,11 @@ public class CardSystem : MonoBehaviour
         if (board.currentTeam != -1)
         {
             NetUseCard uc = new NetUseCard();
-            uc.handIndex = index;
             uc.cardId = cardId; 
             uc.targetX = targetPiece.X;
             uc.targetY = targetPiece.Y;
+            uc.stepCost = 0; 
+            uc.team = isWhite ? 0 : 1; 
             Client.Instance.SendToServer(uc);
         }
         CancelTargeting();
@@ -604,10 +650,11 @@ public class CardSystem : MonoBehaviour
         if (board.currentTeam != -1)
         {
             NetUseCard uc = new NetUseCard();
-            uc.handIndex = index;
             uc.cardId = cardId;
             uc.targetX = savedTargetX;
             uc.targetY = savedTargetY;
+            uc.stepCost = 0;
+            uc.team = isWhite ? 0 : 1; 
             Client.Instance.SendToServer(uc);
         }
         CancelTargeting();
@@ -646,6 +693,7 @@ public class CardSystem : MonoBehaviour
     void Hit(int x, int y, string enemyTeam)
     {
         ChessPieces target = board.pieces[x, y];
+        if (CameraShake.Instance != null) CameraShake.Instance.Shake(board.attackShakeDuration, board.attackShakeMagnitude+0.1f);
         if (target != null && target.team == enemyTeam)
         {
             target.hp -= 1;
@@ -710,10 +758,11 @@ public class CardSystem : MonoBehaviour
         if (board.currentTeam != -1)
         {
             NetUseCard uc = new NetUseCard();
-            uc.handIndex = index;
             uc.cardId = cardId;
             uc.targetX = sourcePiece.X;
             uc.targetY = sourcePiece.Y;
+            uc.stepCost = 0;
+            uc.team = isWhite ? 0 : 1;
             Client.Instance.SendToServer(uc);
         }
         CancelTargeting();
@@ -781,11 +830,11 @@ public class CardSystem : MonoBehaviour
         if (board.currentTeam != -1)
         {
             NetUseCard uc = new NetUseCard();
-            uc.handIndex = index;
             uc.cardId = cardId;
             uc.targetX = originalX;
             uc.targetY = originalY;
             uc.stepCost = 1;
+            uc.team = isWhite ? 0 : 1;
             Client.Instance.SendToServer(uc);
         }
 
@@ -819,10 +868,11 @@ public class CardSystem : MonoBehaviour
         if (board.currentTeam != -1)
         {
             NetUseCard uc = new NetUseCard();
-            uc.handIndex = index;
             uc.cardId = cardId;
             uc.targetX = targetPiece.X;
             uc.targetY = targetPiece.Y;
+            uc.stepCost = 0;
+            uc.team = isWhite ? 0 : 1;
             Client.Instance.SendToServer(uc);
         }
         CancelTargeting();
@@ -873,17 +923,16 @@ public class CardSystem : MonoBehaviour
         if (CardDescriptionUI.Instance != null && board.stepsThisTurn < 2)
             CardDescriptionUI.Instance.UpdateTurnText(board.isWhiteTurn, board.stepsThisTurn);
 
-        // 如果你有做 Magic->pawn 升變，就要像 Rush 一樣判斷是否在終點列才決定要不要 CheckTurnEnd
         board.CheckTurnEnd();
 
         if (board.currentTeam != -1)
         {
             NetUseCard uc = new NetUseCard();
-            uc.handIndex = index;
             uc.cardId = cardId;
             uc.targetX = packedX;
             uc.targetY = packedY;
             uc.stepCost = 1;
+            uc.team = isWhite ? 0 : 1;
             Client.Instance.SendToServer(uc);
         }
 

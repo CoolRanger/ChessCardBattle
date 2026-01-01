@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Unity.Networking.Transport;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Splines.ExtrusionShapes;
 
 public class Board : MonoBehaviour
 {
@@ -43,6 +44,9 @@ public class Board : MonoBehaviour
     public AudioClip attackSound;
     public AudioClip menuBGM;
     public AudioClip battleBGM;
+
+    public float attackShakeDuration = 0.2f;
+    public float attackShakeMagnitude = 0.3f; 
 
     //(0: white, 1: black, -1: Local)
     public int currentTeam = -1;
@@ -451,13 +455,7 @@ public class Board : MonoBehaviour
         else if (targetTile.is_attack_move)
         {
             if (AudioManager.Instance != null && attackSound != null) AudioManager.Instance.PlaySFX(attackSound);
-            /*if (stepsThisTurn != 0)
-            {
-                Debug.Log("Second move cannot attack");
-                selectedPiece = null;
-                clearAllTile();
-                return;
-            } */
+            if (CameraShake.Instance != null) CameraShake.Instance.Shake(attackShakeDuration, attackShakeMagnitude);
 
             if (targetTile.is_enpassant)
             {
@@ -755,6 +753,7 @@ public class Board : MonoBehaviour
                 ChessPieces piece = pieces[x, y];
                 if (piece != null && piece.team == currentTeamName && piece.poisonTurns > 0)
                 {
+                    if (CameraShake.Instance != null) CameraShake.Instance.Shake(attackShakeDuration, attackShakeMagnitude);
                     piece.hp -= 1;
                     piece.poisonTurns -= 1;
                     piece.UpdateStatusColor();
@@ -933,6 +932,12 @@ public class Board : MonoBehaviour
 
             if (epPawn != null)
             {
+                if (CameraShake.Instance != null && attackSound != null)
+                {
+                    CameraShake.Instance.Shake(attackShakeDuration, attackShakeMagnitude);
+                    if (AudioManager.Instance != null) AudioManager.Instance.PlaySFX(attackSound);
+                }
+
                 epPawn.hp -= targetP.atk;
 
                 if (epPawn.hp <= 0)
@@ -960,6 +965,11 @@ public class Board : MonoBehaviour
 
         if (enemyPiece != null)
         {
+            if (CameraShake.Instance != null)
+            {
+                CameraShake.Instance.Shake(attackShakeDuration, attackShakeMagnitude);
+                if (AudioManager.Instance != null && attackSound != null) AudioManager.Instance.PlaySFX(attackSound);
+            }
             int damage = targetP.atk;
             enemyPiece.hp -= damage;
             if (enemyPiece.hp <= 0)
@@ -1016,20 +1026,25 @@ public class Board : MonoBehaviour
     {
         NetUseCard uc = msg as NetUseCard;
 
-        bool isMyMessage = (currentTeam != -1) &&
-                           ((currentTeam == 0 && isWhiteTurn) || (currentTeam == 1 && !isWhiteTurn));
+        if ((currentTeam == uc.team)) return;
 
-        if (isMyMessage) return;
+        CardSystem cs = (uc.team == 0) ? whiteCardSystem : blackCardSystem;
 
-
-        if (isWhiteTurn)
-            whiteCardSystem.UseSpecificCard(uc.handIndex, uc.cardId, uc.targetX, uc.targetY, uc.stepCost);
-        else
-            blackCardSystem.UseSpecificCard(uc.handIndex, uc.cardId, uc.targetX, uc.targetY, uc.stepCost);
+        cs.UseSpecificCardById(
+            uc.cardId,
+            uc.targetX,
+            uc.targetY,
+            uc.stepCost
+        );
     }
 
     private void OnSkipClient(NetMessage msg)
     {
+        if (GameUI.Instance != null && GameUI.Instance.btnSound != null && AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySFX(GameUI.Instance.btnSound);
+        }
+
         stepsThisTurn++;
         if (stepsThisTurn < 2 && CardDescriptionUI.Instance != null)
             CardDescriptionUI.Instance.UpdateTurnText(isWhiteTurn, stepsThisTurn);

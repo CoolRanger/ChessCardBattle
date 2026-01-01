@@ -4,13 +4,14 @@ using UnityEngine;
 
 public class NetUseCard : NetMessage
 {
-    public int handIndex;
     public int cardId;
 
     public int targetX;
     public int targetY;
 
     public int stepCost;
+
+    public int team;
 
     public NetUseCard()
     {
@@ -29,22 +30,22 @@ public class NetUseCard : NetMessage
     public override void Serialize(ref DataStreamWriter writer)
     {
         writer.WriteByte((byte)Code);
-        writer.WriteInt(handIndex);
         writer.WriteInt(cardId);
 
         writer.WriteInt(targetX);
         writer.WriteInt(targetY);
         writer.WriteInt(stepCost);
+        writer.WriteInt(team);
     }
 
     public override void Deserialize(DataStreamReader reader)
     {
-        handIndex = reader.ReadInt();
         cardId = reader.ReadInt();
 
         targetX = reader.ReadInt();
         targetY = reader.ReadInt();
         stepCost  = reader.ReadInt();
+        team = reader.ReadInt();
     }
 
     public override void ReceivedOnClient()

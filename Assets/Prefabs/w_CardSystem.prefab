@@ -61,6 +61,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0a83b9ba8f6f75845a48821269552597, type: 2}
   hand:
   - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   maxHandSize: 5
   selectedCard: {fileID: 0}
   energyBar: {fileID: 0}
