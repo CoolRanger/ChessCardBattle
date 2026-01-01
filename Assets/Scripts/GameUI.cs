@@ -1,6 +1,7 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameUI : MonoBehaviour
 {
@@ -25,9 +26,17 @@ public class GameUI : MonoBehaviour
         Instance = this;
     }
 
+
+
     public void OnLocalGameButton()
     {
         menuAnimator.SetTrigger("InGameMenu");
+
+        gameInfoRoot.SetActive(true);
+
+        if (SkipButtonUI.Instance != null) SkipButtonUI.Instance.InitializeGameUI();
+
+
         board.StartLocalGame();
         
         if (Camera.main != null)
@@ -42,6 +51,10 @@ public class GameUI : MonoBehaviour
     public void OnOnlineGameStart()
     {
         menuAnimator.SetTrigger("InGameMenu");
+
+        gameInfoRoot.SetActive(true);
+
+        if (SkipButtonUI.Instance != null) SkipButtonUI.Instance.InitializeGameUI();
 
         if (Camera.main != null)
         {
@@ -119,6 +132,11 @@ public class GameUI : MonoBehaviour
         board.isGameActive = false;
         gameInfoRoot.SetActive(false);
         gameOverPanel.SetActive(true);
+        if (CardDescriptionUI.Instance != null)
+        {
+            CardDescriptionUI.Instance.Hide();         
+            CardDescriptionUI.Instance.HidePieceInfo();
+        }
         CardDescriptionUI.Instance.pieceStatsRoot.SetActive(false);
         winnerText.text = (winner == 0) ? "White Wins!" : "Black Wins!";
     }
@@ -136,6 +154,7 @@ public class GameUI : MonoBehaviour
         if (AudioManager.Instance != null && menuBGM != null) AudioManager.Instance.PlayBGM(menuBGM);
         gameOverPanel.SetActive(false);
         gameInfoRoot.SetActive(false);
+        if (SkipButtonUI.Instance != null) SkipButtonUI.Instance.ResetState();
         menuAnimator.SetTrigger("StartMenu");
 
         server.ShutDown();
@@ -150,6 +169,23 @@ public class GameUI : MonoBehaviour
         if (Camera.main != null)
         {
             StartCoroutine(MoveCameraToBoard(new Vector3(0, 15, -10), Quaternion.identity, 0f));
+        }
+    }
+
+    public void OnsurrenderButton()
+    {
+        if (!board.isGameActive) return;
+
+        if (board.currentTeam != -1)
+        {
+            NetSurrender ns = new NetSurrender();
+            ns.teamId = board.currentTeam;
+            client.SendToServer(ns);
+        }
+        else
+        {
+            int winner = board.isWhiteTurn ? 1 : 0;
+            OnGameWon(winner);
         }
     }
 }

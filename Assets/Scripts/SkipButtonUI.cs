@@ -3,83 +3,118 @@ using UnityEngine.UI;
 
 public class SkipButtonUI : MonoBehaviour
 {
-    public Button myButton;
-    public RectTransform rectTransform;
+    public static SkipButtonUI Instance { get; private set; }
 
-    [Header("位置設定")]
-    public float marginX = 50f;
-    public float marginY = 50f;
+    [Header("按鈕物件")]
+    public Button skipBtn;
+    public Button surrenderBtn;
 
-    [Header("延遲顯示")]
-    public float delayTime = 1.0f; 
-    private float currentTimer = 0f;
+    [Header("定位點")]
+    public RectTransform posWhiteSkip;  
+    public RectTransform posBlackSkip;  
+    public RectTransform posWhiteSurrender; 
+    public RectTransform posBlackSurrender; 
 
     private Board board;
 
+    private void Awake()
+    {
+        Instance = this;
+        board = FindFirstObjectByType<Board>();
+    }
+
     void Start()
     {
-        board = FindFirstObjectByType<Board>();
-        if (myButton == null) myButton = GetComponent<Button>();
-        if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
-        myButton.onClick.AddListener(() => board.OnSkipButtonUser());
-        transform.localScale = Vector3.zero;
+        if (board == null) Debug.LogError("SkipButtonUI 找不到 Board！");
+
+        skipBtn.onClick.AddListener(() => board.OnSkipButtonUser());
+        surrenderBtn.onClick.AddListener(() => GameUI.Instance.OnsurrenderButton());
+    }
+
+    public void InitializeGameUI()
+    {
+        UpdatePosition();
+        ShowButtons();
+    }
+
+    public void ResetState()
+    {
+        HideButtons();
+    }
+
+    private void HideButtons()
+    {
+        skipBtn.gameObject.SetActive(false);
+        surrenderBtn.gameObject.SetActive(false);
+    }
+
+    private void ShowButtons()
+    {
+        skipBtn.gameObject.SetActive(true);
+        surrenderBtn.gameObject.SetActive(true);
+    }
+
+    void UpdatePosition()
+    {
+        if (board == null) return;
+
+        RectTransform targetSkipPos;
+        RectTransform targetSurrenderPos;
+
+        if (board.currentTeam == 1)
+        {
+            targetSkipPos = posBlackSkip;
+            targetSurrenderPos = posBlackSurrender;
+        }
+        else
+        {
+            targetSkipPos = posWhiteSkip;
+            targetSurrenderPos = posWhiteSurrender;
+        }
+
+        if (targetSkipPos != null)
+        {
+            RectTransform skipRect = skipBtn.GetComponent<RectTransform>();
+            SnapTo(skipRect, targetSkipPos);
+        }
+
+        if (targetSurrenderPos != null)
+        {
+            RectTransform surrenderRect = surrenderBtn.GetComponent<RectTransform>();
+            SnapTo(surrenderRect, targetSurrenderPos);
+        }
+    }
+
+    void SnapTo(RectTransform source, RectTransform target)
+    {
+        source.anchorMin = target.anchorMin;
+        source.anchorMax = target.anchorMax;
+        source.pivot = target.pivot;
+
+        source.anchoredPosition = target.anchoredPosition;
+
+
+        source.localScale = Vector3.one;
+
+        Vector3 pos = source.localPosition;
+        pos.z = 0;
+        source.localPosition = pos;
     }
 
     void Update()
     {
-        if (board == null) return;
+        if (board == null || !board.isGameActive) return;
 
-        if (!board.isGameActive)
-        {
-            currentTimer = 0f;
-            transform.localScale = Vector3.zero; 
-            return;
-        }
-
-        if (currentTimer < delayTime)
-        {
-            currentTimer += Time.deltaTime;
-            transform.localScale = Vector3.zero; 
-            return; 
-        }
-
-        transform.localScale = Vector3.one;
         UpdatePosition();
-        UpdateInteractable();
-    }
 
-    void UpdateInteractable()
-    {
         bool canInteract = false;
-
-        if (board.currentTeam == -1)
-        {
-            canInteract = true;
-        }
+        if (board.currentTeam == -1) canInteract = true;
         else
         {
             bool isMyTurn = (board.currentTeam == 0 && board.isWhiteTurn) ||
                             (board.currentTeam == 1 && !board.isWhiteTurn);
             canInteract = isMyTurn;
         }
-
-        myButton.interactable = canInteract;
-    }
-
-    void UpdatePosition()
-    {
-        bool isRightSide = false;
-
-        if (board.currentTeam == -1)
-            isRightSide = true; 
-        else
-            isRightSide = (board.currentTeam == 0); 
-
-        rectTransform.anchorMin = new Vector2(isRightSide ? 1 : 0, 0);
-        rectTransform.anchorMax = new Vector2(isRightSide ? 1 : 0, 0);
-        rectTransform.pivot = new Vector2(isRightSide ? 1 : 0, 0); 
-
-        if (isRightSide) rectTransform.anchoredPosition = new Vector2(-marginX, marginY);
-        else rectTransform.anchoredPosition = new Vector2(marginX, marginY);
+        skipBtn.interactable = canInteract;
     }
 }

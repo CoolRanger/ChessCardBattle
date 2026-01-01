@@ -25,6 +25,8 @@ public class Client : MonoBehaviour
     //Methods
     public void Init(string ip, ushort port)
     {
+        Instance = this;
+
         driver = NetworkDriver.Create();
 
         NetworkEndpoint endpoint = NetworkEndpoint.Parse(ip, port, NetworkFamily.Ipv4);

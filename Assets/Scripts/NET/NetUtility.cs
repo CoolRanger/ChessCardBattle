@@ -13,7 +13,8 @@ public enum OpCode
     USE_CARD = 6,
     SKIP_STEP = 7,
     PLAYER_LEFT = 8,
-    PROMOTE = 9
+    PROMOTE = 9,
+    SURRENDER = 10
 }
 
 
@@ -31,6 +32,7 @@ public static class NetUtility
     public static Action<NetMessage> C_SKIP_STEP;
     public static Action<NetMessage> C_PLAYER_LEFT;
     public static Action<NetMessage> C_PROMOTE;
+    public static Action<NetMessage> C_SURRENDER;
 
     // Net messages (Server side)
     public static Action<NetMessage, NetworkConnection> S_KEEP_ALIVE;
@@ -43,6 +45,7 @@ public static class NetUtility
     public static Action<NetMessage, NetworkConnection> S_SKIP_STEP;
     public static Action<NetMessage, NetworkConnection> S_PLAYER_LEFT;
     public static Action<NetMessage, NetworkConnection> S_PROMOTE;
+    public static Action<NetMessage, NetworkConnection> S_SURRENDER;
 
 
     public static void OnData(
@@ -89,6 +92,10 @@ public static class NetUtility
 
             case OpCode.PROMOTE:
                 msg = new NetPromote(stream);
+                break;
+
+            case OpCode.SURRENDER:
+                msg = new NetSurrender(stream);
                 break;
 
             /*case OpCode.REMATCH:

@@ -2,18 +2,18 @@ using UnityEngine;
 
 public class AudioManager : MonoBehaviour
 {
-    public static AudioManager Instance;
+    public static AudioManager Instance { get; private set; }
 
-    [Header("Components")]
-    public AudioSource sfxSource;
+    [Header("Audio Sources")]
     public AudioSource bgmSource;
+    public AudioSource sfxSource;
 
-    void Awake()
+    private void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); 
+            DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -21,18 +21,40 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    public void PlaySFX(AudioClip clip, float volume = 1.0f)
+    private void Start()
     {
-        if (clip != null && sfxSource != null)
-        {
-            sfxSource.PlayOneShot(clip, volume);
-        }
+        float savedBGM = PlayerPrefs.GetFloat("BGM_Vol", 0.5f);
+        float savedSFX = PlayerPrefs.GetFloat("SFX_Vol", 0.5f);
+
+        SetBGMVolume(savedBGM);
+        SetSFXVolume(savedSFX);
     }
 
-    public void PlayBGM(AudioClip clip, float volume = 1.0f)
+    public void PlayBGM(AudioClip clip)
     {
+        if (bgmSource.clip == clip) return;
         bgmSource.clip = clip;
-        bgmSource.loop = true;
         bgmSource.Play();
     }
+
+    public void PlaySFX(AudioClip clip)
+    {
+        sfxSource.PlayOneShot(clip);
+    }
+
+
+    public void SetBGMVolume(float value)
+    {
+        if (bgmSource != null) bgmSource.volume = value;
+        PlayerPrefs.SetFloat("BGM_Vol", value);
+    }
+
+    public void SetSFXVolume(float value)
+    {
+        if (sfxSource != null) sfxSource.volume = value;
+        PlayerPrefs.SetFloat("SFX_Vol", value);
+    }
+
+    public float GetBGMVolume() { return PlayerPrefs.GetFloat("BGM_Vol", 0.5f); }
+    public float GetSFXVolume() { return PlayerPrefs.GetFloat("SFX_Vol", 0.5f); }
 }

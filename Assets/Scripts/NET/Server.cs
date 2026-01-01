@@ -26,14 +26,18 @@ public class Server : MonoBehaviour
 
     public Action connectionDropped;
 
-    //Methods
+
     public void Init(ushort port)
     {
+        connectedPlayers = 0;
+
+        Instance = this;
+
         driver = NetworkDriver.Create();
         NetworkEndpoint endpoint = NetworkEndpoint.AnyIpv4;
         endpoint.Port = port;
 
-        if(driver.Bind(endpoint) != 0)
+        if (driver.Bind(endpoint) != 0)
         {
             Debug.Log("Unable to bind on port" + endpoint.Port);
             return;
@@ -56,6 +60,7 @@ public class Server : MonoBehaviour
             connections.Dispose();
             isActive = false;
         }
+        Instance = null;
     }
 
     public void OnDestroy()
@@ -120,13 +125,14 @@ public class Server : MonoBehaviour
     {
         DataStreamReader stream;
 
+        if (!isActive) return;
+
         for (int i = 0; i < connections.Length; i++)
         {
             NetworkEvent.Type cmd;
 
-            while ((cmd = driver.PopEventForConnection(connections[i], out stream)) != NetworkEvent.Type.Empty)
+            while (isActive && (cmd = driver.PopEventForConnection(connections[i], out stream)) != NetworkEvent.Type.Empty)
             {
-        
                 if (cmd == NetworkEvent.Type.Data)
                 {
                     NetUtility.OnData(stream, connections[i], this);
@@ -136,10 +142,11 @@ public class Server : MonoBehaviour
                     Debug.Log("Client disconnected from server");
                     connections[i] = default(NetworkConnection);
 
-                    
                     Broadcast(new NetPlayerLeft());
                     Debug.Log("¡iServer¡j¤w¼s¼½ PlayerLeft");
+
                     NetUtility.C_PLAYER_LEFT?.Invoke(new NetPlayerLeft());
+                    if (!isActive) return;
                 }
             }
         }

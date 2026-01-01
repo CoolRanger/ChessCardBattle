@@ -65,9 +65,7 @@ public class Board : MonoBehaviour
         {
             Client.Instance.connectionDropped -= OnServerDisconnected;
             Client.Instance.connectionDropped += OnServerDisconnected;
-            Debug.Log("【Board】已成功訂閱 Server 斷線事件");
         }
-        else Debug.LogWarning("【Board】警告：找不到 Client 實體，無法訂閱斷線事件！");
     }
 
     void Update()
@@ -128,7 +126,7 @@ public class Board : MonoBehaviour
             }
         }
 
-
+        ResetViewToDefault();
         clearAllTile();
         selectedPiece = null;
         isWhiteTurn = true;
@@ -182,6 +180,33 @@ public class Board : MonoBehaviour
             blackCardSystem.isWhite = false;
 
             hasInitialized = true;
+        }
+    }
+
+    public void ResetViewToDefault()
+    {
+        for (int x = 0; x < 8; x++)
+        {
+            for (int y = 0; y < 8; y++)
+            {
+                if (tiles[x, y] != null)
+                {
+                    tiles[x, y].transform.rotation = Quaternion.identity;
+                }
+            }
+        }
+        if (whiteCardSystem != null)
+        {
+            whiteCardSystem.transform.rotation = Quaternion.identity;
+            if (whiteCardSystem.energyBar != null)
+                whiteCardSystem.energyBar.transform.rotation = Quaternion.identity;
+        }
+
+        if (blackCardSystem != null)
+        {
+            blackCardSystem.transform.rotation = Quaternion.identity;
+            if (blackCardSystem.energyBar != null)
+                blackCardSystem.energyBar.transform.rotation = Quaternion.identity;
         }
     }
 
@@ -619,10 +644,7 @@ public class Board : MonoBehaviour
 
     private void BackToMenu()
     {
-        if (Client.Instance != null) Client.Instance.ShutDown();
-        if (Server.Instance != null) Server.Instance.ShutDown();
-
-        SceneManager.LoadScene("OnlineMenu");
+        GameUI.Instance.OnMenuButton();
     }
 
 
@@ -777,6 +799,9 @@ public class Board : MonoBehaviour
 
         NetUtility.C_PLAYER_LEFT += OnPlayerLeftClient;
 
+        NetUtility.S_SURRENDER += OnSurrenderServer;
+        NetUtility.C_SURRENDER += OnSurrenderClient;
+
         if (Client.Instance != null)
             Client.Instance.connectionDropped += OnServerDisconnected;
     }
@@ -805,7 +830,10 @@ public class Board : MonoBehaviour
 
         NetUtility.C_PLAYER_LEFT -= OnPlayerLeftClient;
 
-        
+        NetUtility.S_SURRENDER -= OnSurrenderServer;
+        NetUtility.C_SURRENDER -= OnSurrenderClient;
+
+
 
         if (Client.Instance != null)
             Client.Instance.connectionDropped -= OnServerDisconnected;
@@ -853,6 +881,12 @@ public class Board : MonoBehaviour
         BackToMenu();
     }
 
+    private void OnSurrenderServer(NetMessage msg, NetworkConnection cnn)
+    {
+        NetSurrender ns = msg as NetSurrender;
+        Server.Instance.Broadcast(ns);
+    }
+
     // Client Side Logic
     private void OnWelcomeClient(NetMessage msg)
     {
@@ -866,6 +900,8 @@ public class Board : MonoBehaviour
     private void OnStartGameClient(NetMessage msg)
     {
         Debug.Log("Both players connected. Starting game!");
+        if (AudioManager.Instance != null && battleBGM != null)
+            AudioManager.Instance.PlayBGM(battleBGM);
         isGameActive = true;
         ResetGame();
         if (currentTeam == 1) AdjustViewForBlackTeam();
@@ -1012,6 +1048,16 @@ public class Board : MonoBehaviour
     {
         Debug.Log("Opponent has left the game.");
         BackToMenu();
+    }
+
+    private void OnSurrenderClient(NetMessage msg)
+    {
+        NetSurrender ns = msg as NetSurrender;
+        Debug.Log($"Team {ns.teamId} has surrendered.");
+
+        int winner = (ns.teamId == 0) ? 1 : 0;
+
+        GameUI.Instance.OnGameWon(winner);
     }
     #endregion
 }
