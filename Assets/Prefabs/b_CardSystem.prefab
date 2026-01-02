@@ -64,6 +64,7 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  - {fileID: 0}
   maxHandSize: 5
   selectedCard: {fileID: 0}
   energyBar: {fileID: 0}

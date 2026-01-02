@@ -64,12 +64,12 @@ public class Board : MonoBehaviour
         UnRegisterEvents();
     }
 
-    /*[SerializeField] Vector2Int aspectRatio = new(16, 9);
-    public bool fullScreen = true;*/
+    [SerializeField] Vector2Int aspectRatio = new(16, 9);
+    public bool fullScreen = true;
 
     void Start()
     {
-        /*Vector2Int size = default;
+        Vector2Int size = default;
         float currentRatio = (float)Screen.width / Screen.height;
         float ratioGoal = (float)aspectRatio.x / aspectRatio.y;
         if (currentRatio > ratioGoal)
@@ -82,7 +82,7 @@ public class Board : MonoBehaviour
             size.y = (int)(Screen.width / ratioGoal);
             size.x = Screen.width;
         }
-        Screen.SetResolution(size.x, size.y, fullScreen);*/
+        Screen.SetResolution(size.x, size.y, fullScreen);
 
 
         if (AudioManager.Instance != null && menuBGM != null) AudioManager.Instance.PlayBGM(menuBGM);
@@ -161,6 +161,8 @@ public class Board : MonoBehaviour
 
         lastWhiteMoved = null;
         lastBlackMoved = null;
+
+        redTiles.Clear();
 
         whiteCardSystem.ResetCards();
         blackCardSystem.ResetCards();
@@ -1050,6 +1052,28 @@ public class Board : MonoBehaviour
         else
         {
             targetP.moveTo(mm.targetX, mm.targetY);
+        }
+
+        if (targetP != null && targetP.type == "king")
+        {
+            int dx = mm.targetX - mm.originalX;
+
+            if (Mathf.Abs(dx) == 2)
+            {
+                int y = mm.originalY;
+                if (dx < 0)
+                {
+                    ChessPieces rook = pieces[0, y];
+                    if (rook != null && rook.type == "rook")
+                        rook.moveTo(3, y);
+                }
+                else
+                {
+                    ChessPieces rook = pieces[7, y];
+                    if (rook != null && rook.type == "rook")
+                        rook.moveTo(5, y);
+                }
+            }
         }
 
         stepsThisTurn++;

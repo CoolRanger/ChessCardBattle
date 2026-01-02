@@ -649,17 +649,20 @@ public class CardSystem : MonoBehaviour
         Destroy(pendingCard.gameObject);
         RepositionHand();
 
+        board.stepsThisTurn += 1;
+
         if (board.currentTeam != -1)
         {
             NetUseCard uc = new NetUseCard();
             uc.cardId = cardId;
             uc.targetX = savedTargetX;
             uc.targetY = savedTargetY;
-            uc.stepCost = 0;
+            uc.stepCost = 1;
             uc.team = isWhite ? 0 : 1; 
             Client.Instance.SendToServer(uc);
         }
         CancelTargeting();
+        board.CheckTurnEnd();
     }
 
     private void ApplyFireBallDamage(int refX, int refY)
